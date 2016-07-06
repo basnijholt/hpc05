@@ -7,5 +7,5 @@ setup(name='hpc05',
       author='Michael Wimmer and Bas Nijholt',
       license='BSD 2-clause',
       packages=['hpc05'],
-      install_requires=['ipyparallel'],
+      install_requires=['ipyparallel', 'pexpect', 'pyzmq'],
       zip_safe=False)
