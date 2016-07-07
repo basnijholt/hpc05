@@ -6,6 +6,6 @@ setup(name='hpc05',
       url='https://gitlab.kwant-project.org/cwg/hpc05',
       author='Michael Wimmer and Bas Nijholt',
       license='BSD 2-clause',
-      py_modules=["hpc05"],
+      py_modules=["hpc05", "hpc05_culler"],
       install_requires=['ipyparallel', 'pexpect', 'pyzmq'],
       zip_safe=False)
