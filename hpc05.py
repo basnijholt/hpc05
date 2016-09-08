@@ -10,7 +10,7 @@ os.environ['SSH_AUTH_SOCK'] = os.path.expanduser('~/ssh-agent.socket')
 class HPC05Client(ipyparallel.Client):
     ssh_forward_child = None
 
-    def __init__(self, profile_name="pbs"):
+    def __init__(self, profile_name="pbs", *args, **kwargs):
         json_file, self.json_filename = tempfile.mkstemp()
         os.close(json_file)
 
@@ -94,7 +94,7 @@ class HPC05Client(ipyparallel.Client):
             raise RuntimeError(
                 "Something weird went wrong: " + self.ssh_culler_child.before)
 
-        super(HPC05Client, self).__init__(self.json_filename)
+        super(HPC05Client, self).__init__(self.json_filename, *args, **kwargs)
 
     def __del__(self):
         if self.ssh_forward_child:
