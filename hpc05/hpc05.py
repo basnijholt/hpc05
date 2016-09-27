@@ -28,6 +28,18 @@ def setup_ssh(username, hostname, password=None):
     return ssh
 
 
+def get_info_from_ssh_config(hostname):
+    user_config_file = os.path.expanduser("~/.ssh/config")
+    ssh_config = paramiko.SSHConfig()
+    if os.path.exists(user_config_file):
+        with open(user_config_file) as f:
+            ssh_config.parse(f)
+    cfg = ssh_config.lookup(hostname)
+    full_hostname = cfg['hostname']
+    username = cfg['user']
+    return username, full_hostname
+
+
 class HPC05Client(ipyparallel.Client):
     """ipyparallel Client to connect to the hpc05.
 
@@ -59,11 +71,18 @@ class HPC05Client(ipyparallel.Client):
     Then setup a ipcluster on the hpc05 by starting a screen and running
         ipcluster start --n=10 --profile=pbs
     """
-    def __init__(self, username, hostname='hpc05', password=None,
+    def __init__(self, username=None, hostname='hpc05', password=None,
         profile_name="pbs", create_new_profile=False, *args, **kwargs):
         # Create temporary file
         json_file, self.json_filename = tempfile.mkstemp()
         os.close(json_file)
+
+        # Get username from ssh_config
+        if username is None:
+            try:
+                username, hostname = get_info_from_ssh_config(hostname)
+            except KeyError:
+                raise Exception('hostname not in ~/.ssh/config, enter username')
 
         # Make ssh connection
         ssh = setup_ssh(username, hostname, password)
@@ -101,7 +120,8 @@ class HPC05Client(ipyparallel.Client):
         with open(self.json_filename, "w") as json_file:
             json.dump(local_json_data, json_file)
 
-        self.tunnel = SSHTunnelForwarder(hostname, local_bind_addresses=local_addresses,
+        self.tunnel = SSHTunnelForwarder(hostname, ssh_username=username,
+                                         local_bind_addresses=local_addresses,
                                          remote_bind_addresses=remote_addresses)
         self.tunnel.start()
 

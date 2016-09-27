@@ -10,7 +10,7 @@ from IPython.core.profiledir import ProfileDir
 
 # Local imports
 from hpc05.config import remote_python_path
-from hpc05.hpc05 import setup_ssh
+from hpc05.hpc05 import get_info_from_ssh_config, setup_ssh
 
 os.environ['SSH_AUTH_SOCK'] = os.path.expanduser('~/ssh-agent.socket')
 
@@ -73,7 +73,14 @@ def create_pbs_profile(profile_name='pbs'):
         line_prepender(fname, line)
 
 
-def create_remote_pbs_profile(username, hostname='hpc05', password=None, profile_name="pbs"):
+def create_remote_pbs_profile(username=None, hostname='hpc05', password=None, profile_name="pbs"):
+    # Get username from ssh_config
+    if username is None:
+        try:
+            hostname, username = get_info_from_ssh_config(hostname)
+        except KeyError:
+            raise Exception('hostname not in ~/.ssh/config, enter username')
+
     # Make ssh connection
     with setup_ssh(username, hostname, password) as ssh:
         cmd = '{} -c "import hpc05; hpc05.pbs_profile.create_pbs_profile()"'
