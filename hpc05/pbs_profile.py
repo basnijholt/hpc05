@@ -1,9 +1,18 @@
-import sys
-import subprocess
-from IPython.paths import locate_profile, get_ipython_dir
-from IPython.core.profiledir import ProfileDir
+# Standard library imports
 import os
 import shutil
+import subprocess
+import sys
+
+# Third party imports
+from IPython.paths import locate_profile, get_ipython_dir
+from IPython.core.profiledir import ProfileDir
+
+# Local imports
+from hpc05.config import remote_python_path
+from hpc05.hpc05 import setup_ssh
+
+os.environ['SSH_AUTH_SOCK'] = os.path.expanduser('~/ssh-agent.socket')
 
 def create_base_ipython_dirs():
     """Create default user directories to prevent potential race conditions downstream.
@@ -12,16 +21,16 @@ def create_base_ipython_dirs():
     ProfileDir.create_profile_dir_by_name(get_ipython_dir())
 
 
-def create_throwaway_profile(profile):
+def create_parallel_profile(profile_name):
     cmd = [sys.executable, "-E", "-c", "from IPython import start_ipython; start_ipython()",
-           "profile", "create", profile, "--parallel"]
+           "profile", "create", profile_name, "--parallel"]
     subprocess.check_call(cmd)
-    return profile
+    return profile_name
 
 
-def delete_profile(profile):
+def delete_profile(profile_name):
     MAX_TRIES = 10
-    dir_to_remove = locate_profile(profile)
+    dir_to_remove = locate_profile(profile_name)
     if os.path.exists(dir_to_remove):
         num_tries = 0
         while True:
@@ -47,15 +56,26 @@ def line_prepender(filename, line):
         f.write(line.rstrip('\r\n') + '\n' + content)
 
 
-def create_pbs_profile(profile='pbs'):
+def create_pbs_profile(profile_name='pbs'):
     create_base_ipython_dirs()
-    delete_profile(profile)
-    create_throwaway_profile(profile)
+    try:
+        delete_profile(profile_name)
+    except OSError:
+        pass
+    create_parallel_profile(profile_name)
     f = {'ipcluster_config.py': ["c.IPClusterStart.controller_launcher_class = 'PBSControllerLauncher'", 
                                  "c.IPClusterEngines.engine_launcher_class = 'PBSEngineSetLauncher'"],
          'ipcontroller_config.py': "c.HubFactory.ip = u'*'",
          'ipengine_config.py': "c.IPEngineApp.wait_for_url_file = 60"}
 
     for fname, line in f.items():
-        fname = os.path.join(locate_profile(profile), fname)
+        fname = os.path.join(locate_profile(profile_name), fname)
         line_prepender(fname, line)
+
+
+def create_remote_pbs_profile(username, hostname='hpc05', password=None, profile_name="pbs"):
+    # Make ssh connection
+    with setup_ssh(username, hostname, password) as ssh:
+        cmd = '{} -c "import hpc05; hpc05.pbs_profile.create_pbs_profile()"'
+        stdin, stdout, sterr = ssh.exec_command(cmd.format(remote_python_path, profile_name))
+        return stdout.readlines()
