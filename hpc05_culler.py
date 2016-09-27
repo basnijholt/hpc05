@@ -9,11 +9,13 @@ shutdown.
 
 from collections import defaultdict
 from datetime import datetime
+import sys
 
 from tornado import ioloop, options
 from tornado.log import app_log
 from ipyparallel import Client
 
+start_time = datetime.utcnow()
 
 class EngineCuller(object):
     """An object for culling idle IPython parallel engines."""
@@ -24,8 +26,10 @@ class EngineCuller(object):
         self.timeout = timeout
         self.activity = defaultdict(lambda: {
             'last_active': datetime.utcnow(),
-            'completed': 0,
-        })
+            'completed': 0})
+        self.max_active = 0
+        self.active_now = 0
+        self.num_times_zero = 0
 
     def update_state(self):
         """Check engine status and cull any engines that have become idle.
@@ -44,6 +48,29 @@ class EngineCuller(object):
                 engine_activity['last_active'] = datetime.utcnow()
             engine_activity['completed'] = state['completed']
         self.cull_idle()
+
+        # remember how many engines were active last check and now
+        last_active = self.active_now
+        self.active_now = len(self.activity)
+        running_time = (datetime.utcnow() - start_time).total_seconds()
+
+        # save how many times zero engines have been active
+        if (self.active_now == 0 and last_active == 0 and running_time > 3600):
+            self.num_times_zero += 1
+
+        # stop ipcontroller, ipengines, and this script when
+        # both last check and now there are zero active engines and
+        # the number of engines is going down after having reached a maximum.
+        # or when there have always only been zero engines, this only starts
+        # counting after 1hr.
+        if (len(self.activity) == 0 and
+            self.active_now < self.max_active and
+            last_active == self.active_now or
+            self.num_times_zero > 10):
+            self.client.shutdown(hub=True)
+            sys.exit()
+        self.max_active = max(self.max_active, self.active_now)
+
 
     def cull_idle(self):
         """Cull any engines that have become idle for too long."""
