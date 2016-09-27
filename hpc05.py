@@ -68,5 +68,3 @@ class HPC05Client(ipyparallel.Client):
     def __del__(self):
         if self.tunnel:
             self.tunnel.close()
-        # if self.ssh_culler:
-        #     self.ssh_culler.close()
