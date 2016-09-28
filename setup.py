@@ -1,7 +1,9 @@
 from setuptools import setup
+import versioneer
 
 setup(name='hpc05',
-      version='1.5',
+      version=versioneer.get_version(),
+      cmdclass=versioneer.get_cmdclass(),
       description='Client package for local TU Delft cluster',
       url='https://github.com/basnijholt/hpc05',
       author='Michael Wimmer and Bas Nijholt',
