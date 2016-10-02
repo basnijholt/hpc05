@@ -1,5 +1,5 @@
 __all__ = []
-available = [('hpc05', ['HPC05Client']),
+available = [('client', ['HPC05Client']),
              ('pbs_profile',
              ['create_pbs_profile', 'create_remote_pbs_profile'])]
 for module, names in available:

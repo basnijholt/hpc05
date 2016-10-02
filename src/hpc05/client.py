@@ -5,39 +5,14 @@ import tempfile
 
 # Third party imports
 import ipyparallel
-import paramiko
-from paramiko.ssh_exception import PasswordRequiredException
 from sshtunnel import SSHTunnelForwarder
 from zmq.ssh import tunnel
 
 # Local imports
-import hpc05
-from hpc05.config import remote_python_path
+from .pbs_profile import create_remote_pbs_profile
+from .config import remote_python_path
+from .ssh_utils import get_info_from_ssh_config, setup_ssh, check_bash_profile
 os.environ['SSH_AUTH_SOCK'] = os.path.expanduser('~/ssh-agent.socket')
-
-
-def setup_ssh(username, hostname, password=None):
-    ssh = paramiko.SSHClient()
-    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    try:
-        ssh.connect(hostname, username=username, allow_agent=True,
-                    password=password)
-    except PasswordRequiredException:
-        raise Exception('Enter `password` argument or run `rm -f ~/ssh-agent.socket; ssh-agent -a ~/ssh-agent.socket;' +
-                        'export SSH_AUTH_SOCK=~/ssh-agent.socket; ssh-add` on the local machine')
-    return ssh
-
-
-def get_info_from_ssh_config(hostname):
-    user_config_file = os.path.expanduser("~/.ssh/config")
-    ssh_config = paramiko.SSHConfig()
-    if os.path.exists(user_config_file):
-        with open(user_config_file) as f:
-            ssh_config.parse(f)
-    cfg = ssh_config.lookup(hostname)
-    full_hostname = cfg['hostname']
-    username = cfg['user']
-    return username, full_hostname
 
 
 class HPC05Client(ipyparallel.Client):
@@ -45,16 +20,14 @@ class HPC05Client(ipyparallel.Client):
 
     Parameters
     ----------
-    username : str
-        user name at hpc05
     hostname : str
         hostname, e.g. `hpc05.tudelft.net` or as in config.
+    username : str
+        user name at hostname
     password : str
         password for hpc05. NOT RECOMMENDED, use ssh-agent.
     profile_name : str
         profile name, default results in folder `profile_pbs`.
-    create_new_profile : bool
-        Generates new parallel profile at hpc05.
 
     Attributes
     ----------
@@ -71,8 +44,8 @@ class HPC05Client(ipyparallel.Client):
     Then setup a ipcluster on the hpc05 by starting a screen and running
         ipcluster start --n=10 --profile=pbs
     """
-    def __init__(self, username=None, hostname='hpc05', password=None,
-        profile_name="pbs", create_new_profile=False, *args, **kwargs):
+    def __init__(self, hostname='hpc05', username=None, password=None,
+        profile_name='pbs', *args, **kwargs):
         # Create temporary file
         json_file, self.json_filename = tempfile.mkstemp()
         os.close(json_file)
@@ -85,11 +58,7 @@ class HPC05Client(ipyparallel.Client):
                 raise Exception('hostname not in ~/.ssh/config, enter username')
 
         # Make ssh connection
-        ssh = setup_ssh(username, hostname, password)
-
-        # Create new profile on remote location
-        if create_new_profile:
-            hpc05.create_remote_pbs_profile(username, hostname, password, profile_name)
+        ssh = setup_ssh(hostname, username, password)
 
         # Open SFTP connection and get the ipcontroller-client.json
         with ssh.open_sftp() as sftp:
@@ -98,7 +67,8 @@ class HPC05Client(ipyparallel.Client):
             try:
                 sftp.get(remote_json, self.json_filename)
             except FileNotFoundError:
-                raise Exception('Could not copy json file of pbs cluster, the `ipcluster` probably is not running.')
+                raise Exception('Could not copy json file of pbs cluster, the `ipcluster` probably is not running.' +
+                                'or you have no `profile_pbs`, create with `hpc05.pbs_profile.create_remote_pbs_profile()`')
 
         # Read the json file
         with open(self.json_filename) as json_file:
@@ -125,7 +95,8 @@ class HPC05Client(ipyparallel.Client):
                                          remote_bind_addresses=remote_addresses)
         self.tunnel.start()
 
-        ssh.exec_command('nohup {} -m hpc05_culler'.format(remote_python_path))
+        source_profile = check_bash_profile(ssh, username)
+        ssh.exec_command(source_profile + 'nohup python -m hpc05_culler')
 
         super(HPC05Client, self).__init__(self.json_filename, *args, **kwargs)
 
