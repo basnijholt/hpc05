@@ -1,3 +1,4 @@
+from ._version import get_versions
 __all__ = []
 available = [('client', ['HPC05Client']),
              ('pbs_profile',
@@ -5,3 +6,6 @@ available = [('client', ['HPC05Client']),
 for module, names in available:
     exec('from .{0} import {1}'.format(module, ', '.join(names)))
     __all__.extend(names)
+
+
+__version__ = get_versions()['version']

@@ -10,7 +10,6 @@ from zmq.ssh import tunnel
 
 # Local imports
 from .pbs_profile import create_remote_pbs_profile
-from .config import remote_python_path
 from .ssh_utils import get_info_from_ssh_config, setup_ssh, check_bash_profile
 os.environ['SSH_AUTH_SOCK'] = os.path.expanduser('~/ssh-agent.socket')
 
