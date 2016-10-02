@@ -14,7 +14,7 @@ ssh-add
 Further a parallel profile called `pbs` on the `hpc05`, which can be created by the following command on your local machine:
 ```
 import hpc05
-hpc05.create_remote_pbs_profile(username, hostname='hpc05')
+hpc05.create_remote_pbs_profile(hostname='hpc05')
 ```
 
 Then start a cluster, run on hpc05:
