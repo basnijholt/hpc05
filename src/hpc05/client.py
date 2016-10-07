@@ -1,3 +1,6 @@
+import logging
+logging.disable(logging.CRITICAL)
+
 # Standard library imports
 import json
 import os
