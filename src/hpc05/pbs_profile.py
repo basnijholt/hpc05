@@ -83,6 +83,6 @@ def create_remote_pbs_profile(hostname='hpc05', username=None, password=None, pr
     # Make ssh connection
     with setup_ssh(hostname, username, password) as ssh:
         source_profile = check_bash_profile(ssh, username)
-        cmd = 'python -c "import hpc05; hpc05.pbs_profile.create_pbs_profile()"'
+        cmd = 'python -c "import hpc05; hpc05.pbs_profile.create_pbs_profile(\'{}\')"'
         stdin, stdout, sterr = ssh.exec_command(source_profile + cmd.format(profile_name))
         return stdout.readlines(), sterr.readlines()
