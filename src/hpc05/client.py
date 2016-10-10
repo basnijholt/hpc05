@@ -17,7 +17,7 @@ from .ssh_utils import get_info_from_ssh_config, setup_ssh, check_bash_profile
 os.environ['SSH_AUTH_SOCK'] = os.path.expanduser('~/ssh-agent.socket')
 
 
-class HPC05Client(ipyparallel.Client):
+class Client(ipyparallel.Client):
     """ipyparallel Client to connect to the hpc05.
 
     Parameters
@@ -100,7 +100,7 @@ class HPC05Client(ipyparallel.Client):
         source_profile = check_bash_profile(ssh, username)
         ssh.exec_command(source_profile + 'nohup python -m hpc05_culler')
 
-        super(HPC05Client, self).__init__(self.json_filename, *args, **kwargs)
+        super(Client, self).__init__(self.json_filename, *args, **kwargs)
 
 
     def __del__(self):
