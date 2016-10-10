@@ -3,6 +3,12 @@
 
 Script that connects to PBS cluster with headnode. Since `ipyparallel` doesn't cull enginges when inactive and people are lazy (because they forget to `qdel` their jobs), it automatically kills the `ipengines` after two hours of inactivity. Note that this package doesn't only work for the `hpc05` but also on other TU Delft clusters.
 
+First install this package on **both** your machine and the cluster.
+
+```
+conda install hpc05 -c basnijholt
+```
+
 Make sure you can connect over `ssh` passwordless by copying your ssh key:
 
 ```
