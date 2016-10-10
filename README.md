@@ -1,24 +1,36 @@
 # hpc05
-🖥 Client package for local TU Delft cluster
+🖥 `ipyparallel` Client package for PBS cluster with headnode (as on the TU Delft).
 
-Script that connects to PBS cluster with headnode. Since `ipyparallel` doesn't cull enginges when inactive and people are lazy (because they forget to `qdel` their jobs), it automatically kills the `ipengines` after two hours of inactivity.
+Script that connects to PBS cluster with headnode. Since `ipyparallel` doesn't cull enginges when inactive and people are lazy (because they forget to `qdel` their jobs), it automatically kills the `ipengines` after two hours of inactivity. Note that this package doesn't only work for the `hpc05` but also on other TU Delft clusters.
 
+Make sure you can connect over `ssh` passwordless by copying your ssh key:
 
-Make sure you can connect over `ssh` passwordless:
+```
+ssh-copy-id hpc05
+```
+
+Then add the key to a ssh-agent by running:
 ```
 ssh-agent -a ~/ssh-agent.socket
 export SSH_AUTH_SOCK=~/ssh-agent.socket
 ssh-add
 ```
 
-Further a parallel profile called `pbs` on the `hpc05`, which can be created by the following command on your local machine:
+Further, you need a parallel profile called `pbs` on the `hpc05`, which can be created by the following command on your local machine:
 ```
 import hpc05
 hpc05.create_remote_pbs_profile(hostname='hpc05')
 ```
 
-Then start a cluster, run on hpc05:
+Then start a cluster (preferably in a screen), run on hpc05:
 
 ```
+screen -S pbs
 ipcluster start --profile=pbs --n=20
+```
+
+Now you can connect to the cluster by:
+```
+import hpc05
+hpc05.Client(hostname='hpc05')
 ```
