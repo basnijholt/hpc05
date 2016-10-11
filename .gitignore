@@ -3,3 +3,4 @@ __pycache__
 .ipynb_checkpoints/
 *ipynb
 *.out
+hpc05.egg-info/

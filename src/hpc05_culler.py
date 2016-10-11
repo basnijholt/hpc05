@@ -57,12 +57,15 @@ class EngineCuller(object):
         # save how many times zero engines have been active
         if (self.active_now == 0 and last_active == 0 and running_time > 3600):
             self.num_times_zero += 1
+            app_log.debug('Number of times zero engines active after one hour: {}'.format(self.num_times_zero))
 
         # stop ipcontroller, ipengines, and this script when
         # both last check and now there are zero active engines and
         # the number of engines is going down after having reached a maximum.
         # or when there have always only been zero engines, this only starts
         # counting after 1hr.
+        print_string = 'Running time is {} seconds, active now: {}, last time active: {}, max active last time: {}.'
+        app_log.debug(print_string.format(running_time, self.active_now, last_active, self.max_active))
         if (len(self.activity) == 0 and
             self.active_now < self.max_active and
             last_active == self.active_now or
@@ -97,9 +100,11 @@ def main():
     options.define('interval', default=60,
                    help="""Interval (in seconds) at which state should be checked
                    and culling performed.""")
+    options.define('profile', default='pbs',
+                   help="""Profile name.""")
     options.parse_command_line()
     loop = ioloop.IOLoop.current()
-    culler = EngineCuller(Client(profile='pbs'), options.options.timeout)
+    culler = EngineCuller(Client(profile=options.options.profile), options.options.timeout)
 
     ioloop.PeriodicCallback(
         culler.update_state, options.options.interval * 1000).start()

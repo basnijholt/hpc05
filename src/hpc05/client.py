@@ -98,7 +98,8 @@ class Client(ipyparallel.Client):
         self.tunnel.start()
 
         source_profile = check_bash_profile(ssh, username)
-        ssh.exec_command(source_profile + 'nohup python -m hpc05_culler')
+        python_cmd = 'nohup python -m hpc05_culler --logging=debug --profile={} > ~/culler.log &'
+        ssh.exec_command(source_profile + python_cmd.format(profile_name))
 
         super(Client, self).__init__(self.json_filename, *args, **kwargs)
 
