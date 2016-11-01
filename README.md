@@ -6,7 +6,8 @@ Script that connects to PBS cluster with headnode. Since `ipyparallel` doesn't c
 First install this package on **both** your machine and the cluster.
 
 ```
-conda install hpc05 -c basnijholt
+conda config --add channels conda-forge
+conda install hpc05
 ```
 
 Make sure you can connect over `ssh` passwordless by copying your ssh key:
