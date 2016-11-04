@@ -94,7 +94,7 @@ class EngineCuller(object):
 def main():
     """Start IO loop that checks every 60 seconds whether the engines are
     running, if inactive for two hours they are culled."""
-    options.define('timeout', default=3600,
+    options.define('timeout', default=900,
                    help="""Time (in seconds) after which to consider an engine
                    idle that should be shutdown.""")
     options.define('interval', default=60,
