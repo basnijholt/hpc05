@@ -9,6 +9,8 @@ shutdown.
 
 from collections import defaultdict
 from datetime import datetime
+import psutil
+import os
 import sys
 
 from tornado import ioloop, options
@@ -91,6 +93,31 @@ class EngineCuller(object):
                 self.activity.pop(eid)
 
 
+def kill_running_cullers(profile):
+    """Kills previous running hpc05_cullers that use the same profile."""
+    username = os.path.expanduser('~').split('/')[-1]
+    culler_procs = []
+    for proc in psutil.process_iter():
+        try:
+            cmd = ' '.join(proc.cmdline())
+            is_culler = 'hpc05_culler' and profile in cmd
+            if is_culler and proc.username() == username:
+                # make sure to append only the procs of the user!
+                culler_procs.append(proc)
+        except:
+            pass
+
+    culler_procs = sorted(culler_procs, key=lambda proc: proc.create_time())
+
+    if len(culler_procs) > 1:
+        # Only kill if there is more than 1 proc and don't kill the last one.
+        for proc in culler_procs[:-1]:
+            try:
+                proc.kill()
+            except:
+                pass
+
+
 def main():
     """Start IO loop that checks every 60 seconds whether the engines are
     running, if inactive for two hours they are culled."""
@@ -103,6 +130,7 @@ def main():
     options.define('profile', default='pbs',
                    help="""Profile name.""")
     options.parse_command_line()
+    kill_running_cullers(profile=options.options.profile)
     loop = ioloop.IOLoop.current()
     culler = EngineCuller(Client(profile=options.options.profile), options.options.timeout)
 
