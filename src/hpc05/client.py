@@ -47,7 +47,7 @@ class Client(ipyparallel.Client):
         ipcluster start --n=10 --profile=pbs
     """
     def __init__(self, hostname='hpc05', username=None, password=None,
-        profile_name='pbs', *args, **kwargs):
+        profile_name='pbs', culler=True, *args, **kwargs):
         # Create temporary file
         json_file, self.json_filename = tempfile.mkstemp()
         os.close(json_file)
@@ -96,10 +96,11 @@ class Client(ipyparallel.Client):
                                          local_bind_addresses=local_addresses,
                                          remote_bind_addresses=remote_addresses)
         self.tunnel.start()
-
-        source_profile = check_bash_profile(ssh, username)
-        python_cmd = 'nohup python -m hpc05_culler --logging=debug --profile={} --log_file_prefix=~/culler.log &'
-        ssh.exec_command(source_profile + python_cmd.format(profile_name))
+        
+        if culler:
+            source_profile = check_bash_profile(ssh, username)
+            python_cmd = 'nohup python -m hpc05_culler --logging=debug --profile={} --log_file_prefix=~/culler.log &'
+            ssh.exec_command(source_profile + python_cmd.format(profile_name))
 
         super(Client, self).__init__(self.json_filename, *args, **kwargs)
 
