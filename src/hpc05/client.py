@@ -59,12 +59,12 @@ class Client(ipyparallel.Client):
         # Get username from ssh_config
         if username is None:
             try:
-                username, hostname = get_info_from_ssh_config(hostname)
+                username, full_hostname = get_info_from_ssh_config(hostname)
             except KeyError:
                 raise Exception('hostname not in ~/.ssh/config, enter username')
 
         # Make ssh connection
-        ssh = setup_ssh(hostname, username, password)
+        ssh = setup_ssh(full_hostname, username, password)
 
         # Open SFTP connection and get the ipcontroller-client.json
         with ssh.open_sftp() as sftp:
@@ -98,14 +98,14 @@ class Client(ipyparallel.Client):
             from sshtunnel import SSHTunnelForwarder
             local_addresses = [('', port) for port in local_ports]  # Format for SSHTunnelForwarder
             remote_addresses = [(json_data['location'], json_data[key]) for key in keys]
-            self.tunnel = SSHTunnelForwarder(hostname, ssh_username=username,
+            self.tunnel = SSHTunnelForwarder(full_hostname, ssh_username=username,
                                              local_bind_addresses=local_addresses,
                                              remote_bind_addresses=remote_addresses)
             self.tunnel.start()
         else:
             import pexpect
             ips = ["{}:{}:{} ".format(local_json_data[key], json_data['location'], json_data[key]) for key in keys]
-            ssh_forward_cmd = "ssh -o ConnectTimeout=10 -N -L " + "-L ".join(ips) + 'hpc05'
+            ssh_forward_cmd = "ssh -o ConnectTimeout=10 -N -L " + "-L ".join(ips) + hostname
             self.tunnel = pexpect.spawn(ssh_forward_cmd)
             result = self.tunnel.expect([pexpect.TIMEOUT, pexpect.EOF, "[Pp]assword", "passphrase"], timeout=6)
 
