@@ -109,7 +109,6 @@ class Client(ipyparallel.Client):
             self.tunnel = pexpect.spawn(ssh_forward_cmd)
             result = self.tunnel.expect([pexpect.TIMEOUT, pexpect.EOF, "[Pp]assword", "passphrase"], timeout=6)
 
-
         if culler:
             source_profile = check_bash_profile(ssh, username)
             python_cmd = 'nohup python -m hpc05_culler --logging=debug --profile={} --log_file_prefix=~/culler.log &'
