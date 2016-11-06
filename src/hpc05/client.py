@@ -8,7 +8,6 @@ import tempfile
 
 # Third party imports
 import ipyparallel
-from sshtunnel import SSHTunnelForwarder
 from zmq.ssh import tunnel
 
 # Local imports
@@ -28,8 +27,13 @@ class Client(ipyparallel.Client):
         user name at hostname
     password : str
         password for hpc05. NOT RECOMMENDED, use ssh-agent.
-    profile_name : str
+    profile : str
         profile name, default results in folder `profile_pbs`.
+    culler : bool
+        Controls starting of the culler. Default: True.
+    tunnel_package : bool
+        If True uses the `sshtunnel` package, otherwise
+        it uses pexpect. Default: False.
 
     Attributes
     ----------
@@ -47,7 +51,7 @@ class Client(ipyparallel.Client):
         ipcluster start --n=10 --profile=pbs
     """
     def __init__(self, hostname='hpc05', username=None, password=None,
-        profile_name='pbs', culler=True, *args, **kwargs):
+        profile='pbs', culler=True, tunnel_package=False, *args, **kwargs):
         # Create temporary file
         json_file, self.json_filename = tempfile.mkstemp()
         os.close(json_file)
@@ -64,7 +68,7 @@ class Client(ipyparallel.Client):
 
         # Open SFTP connection and get the ipcontroller-client.json
         with ssh.open_sftp() as sftp:
-            profile_dir = "/home/{}/.ipython/profile_{}/".format(username, profile_name)
+            profile_dir = "/home/{}/.ipython/profile_{}/".format(username, profile)
             remote_json = profile_dir + "security/ipcontroller-client.json"
             try:
                 sftp.get(remote_json, self.json_filename)
@@ -76,15 +80,13 @@ class Client(ipyparallel.Client):
         with open(self.json_filename) as json_file:
             json_data = json.load(json_file)
 
-        # Select six random ports for the local machine
-        local_ports = tunnel.select_random_ports(6)
-        local_addresses = [('', port) for port in local_ports]  # Format for SSHTunnelForwarder
+        keys = ("control", "iopub", "mux", "notification", "registration", "task")
+
         local_json_data = json_data.copy()
         local_json_data['location'] = 'localhost'
 
-        keys = ("control", "iopub", "mux", "notification", "registration", "task")
-        remote_addresses = [(json_data['location'], json_data[key]) for key in keys]
-
+        # Select six random ports for the local machine
+        local_ports = tunnel.select_random_ports(6)
         for port, key in zip(local_ports, keys):
             local_json_data[key] = port
 
@@ -92,15 +94,26 @@ class Client(ipyparallel.Client):
         with open(self.json_filename, "w") as json_file:
             json.dump(local_json_data, json_file)
 
-        self.tunnel = SSHTunnelForwarder(hostname, ssh_username=username,
-                                         local_bind_addresses=local_addresses,
-                                         remote_bind_addresses=remote_addresses)
-        self.tunnel.start()
-        
+        if tunnel_package:
+            from sshtunnel import SSHTunnelForwarder
+            local_addresses = [('', port) for port in local_ports]  # Format for SSHTunnelForwarder
+            remote_addresses = [(json_data['location'], json_data[key]) for key in keys]
+            self.tunnel = SSHTunnelForwarder(hostname, ssh_username=username,
+                                             local_bind_addresses=local_addresses,
+                                             remote_bind_addresses=remote_addresses)
+            self.tunnel.start()
+        else:
+            import pexpect
+            ips = ["{}:{}:{} ".format(local_json_data[key], json_data['location'], json_data[key]) for key in keys]
+            ssh_forward_cmd = "ssh -o ConnectTimeout=10 -N -L " + "-L ".join(ips) + 'hpc05'
+            self.tunnel = pexpect.spawn(ssh_forward_cmd)
+            result = self.tunnel.expect([pexpect.TIMEOUT, pexpect.EOF, "[Pp]assword", "passphrase"], timeout=6)
+
+
         if culler:
             source_profile = check_bash_profile(ssh, username)
             python_cmd = 'nohup python -m hpc05_culler --logging=debug --profile={} --log_file_prefix=~/culler.log &'
-            ssh.exec_command(source_profile + python_cmd.format(profile_name))
+            ssh.exec_command(source_profile + python_cmd.format(profile))
 
         super(Client, self).__init__(self.json_filename, *args, **kwargs)
 
