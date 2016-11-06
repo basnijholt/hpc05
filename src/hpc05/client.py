@@ -33,7 +33,7 @@ class Client(ipyparallel.Client):
         Controls starting of the culler. Default: True.
     tunnel_package : bool
         If True uses the `sshtunnel` package, otherwise
-        it uses pexpect. Default: False.
+        it uses `pexpect`. Default: False.
 
     Attributes
     ----------
@@ -111,7 +111,7 @@ class Client(ipyparallel.Client):
 
         if culler:
             source_profile = check_bash_profile(ssh, username)
-            python_cmd = 'nohup python -m hpc05_culler --logging=debug --profile={} --log_file_prefix=~/culler.log &'
+            python_cmd = 'nohup python -m hpc05_culler --logging=debug --profile={} --log_file_prefix=culler.log &'
             ssh.exec_command(source_profile + python_cmd.format(profile))
 
         super(Client, self).__init__(self.json_filename, *args, **kwargs)
