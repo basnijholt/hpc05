@@ -95,7 +95,7 @@ class EngineCuller(object):
 
 def kill_running_cullers(profile):
     """Kills previous running hpc05_cullers that use the same profile."""
-    username = os.path.expanduser('~').split('/')[-1]
+    username = os.environ.get('USER','username')
     culler_procs = []
     for proc in psutil.process_iter():
         try:
