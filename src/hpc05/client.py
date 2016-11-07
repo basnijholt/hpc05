@@ -34,12 +34,14 @@ class Client(ipyparallel.Client):
     tunnel_package : bool
         If True uses the `sshtunnel` package, otherwise
         it uses `pexpect`. Default: False.
+    extra_args : str
+        Add arguments to the culler. e.g. '--timeout=200'
 
     Attributes
     ----------
     json_filename : str
         file name of tmp local json file with connection details.
-    tunnel : SSHTunnelForwarder object
+    tunnel : SSHTunnelForwarder object or pexpect.spawn object
         ssh tunnel for making connection to the hpc05.
 
     Notes
@@ -51,7 +53,8 @@ class Client(ipyparallel.Client):
         ipcluster start --n=10 --profile=pbs
     """
     def __init__(self, hostname='hpc05', username=None, password=None,
-        profile='pbs', culler=True, tunnel_package=False, *args, **kwargs):
+                 profile='pbs', culler=True, tunnel_package=False,
+                 extra_args=None, *args, **kwargs):
         # Create temporary file
         json_file, self.json_filename = tempfile.mkstemp()
         os.close(json_file)
@@ -111,7 +114,9 @@ class Client(ipyparallel.Client):
 
         if culler:
             source_profile = check_bash_profile(ssh, username)
-            python_cmd = 'nohup python -m hpc05_culler --logging=debug --profile={} --log_file_prefix=culler.log &'
-            ssh.exec_command(source_profile + python_cmd.format(profile))
+            python_cmd = 'nohup python -m hpc05_culler --logging=debug --profile={} --log_file_prefix=culler.log {} &'
+            if extra_args is None:
+                extra_args = ''
+            ssh.exec_command(source_profile + python_cmd.format(profile, extra_args))
 
         super(Client, self).__init__(self.json_filename, *args, **kwargs)
