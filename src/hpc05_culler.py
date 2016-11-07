@@ -22,7 +22,7 @@ start_time = datetime.utcnow()
 class EngineCuller(object):
     """An object for culling idle IPython parallel engines."""
 
-    def __init__(self, client, timeout=300):
+    def __init__(self, client, timeout):
         """Initialize culler, with current time."""
         self.client = client
         self.timeout = timeout
@@ -100,7 +100,7 @@ def kill_running_cullers(profile):
     for proc in psutil.process_iter():
         try:
             cmd = ' '.join(proc.cmdline())
-            is_culler = 'hpc05_culler' and profile in cmd
+            is_culler = 'hpc05_culler' in cmd and profile in cmd
             if is_culler and proc.username() == username:
                 # make sure to append only the procs of the user!
                 culler_procs.append(proc)
@@ -139,5 +139,5 @@ def main():
     loop.start()
 
 if __name__ == '__main__':
-    print('running')
+    print('Running')
     main()
