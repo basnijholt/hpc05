@@ -115,8 +115,3 @@ class Client(ipyparallel.Client):
             ssh.exec_command(source_profile + python_cmd.format(profile))
 
         super(Client, self).__init__(self.json_filename, *args, **kwargs)
-
-
-    def __del__(self):
-        if self.tunnel:
-            self.tunnel.close()
