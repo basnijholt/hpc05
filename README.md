@@ -1,7 +1,7 @@
 # hpc05
 🖥 `ipyparallel` Client package for PBS cluster with headnode (as on the TU Delft).
 
-Script that connects to PBS cluster with headnode. Since `ipyparallel` doesn't cull enginges when inactive and people are lazy (because they forget to `qdel` their jobs), it automatically kills the `ipengines` after two hours of inactivity. Note that this package doesn't only work for the `hpc05` but also on other TU Delft clusters.
+Script that connects to PBS cluster with headnode. Since `ipyparallel` doesn't cull enginges when inactive and people are lazy (because they forget to `qdel` their jobs), it automatically kills the `ipengines` after the set timeout (default=15 min)	. Note that this package doesn't only work for the `hpc05` but also on other TU Delft clusters.
 
 First install this package on **both** your machine and the cluster.
 
