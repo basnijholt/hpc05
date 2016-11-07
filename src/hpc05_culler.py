@@ -22,10 +22,11 @@ start_time = datetime.utcnow()
 class EngineCuller(object):
     """An object for culling idle IPython parallel engines."""
 
-    def __init__(self, client, timeout):
+    def __init__(self, client, timeout, interval):
         """Initialize culler, with current time."""
         self.client = client
         self.timeout = timeout
+        self.interval = interval
         self.activity = defaultdict(lambda: {
             'last_active': datetime.utcnow(),
             'completed': 0})
@@ -49,11 +50,10 @@ class EngineCuller(object):
                 # tasks pending or history changed, update timestamp
                 engine_activity['last_active'] = datetime.utcnow()
             engine_activity['completed'] = state['completed']
-        self.cull_idle()
 
         # remember how many engines were active last check and now
         last_active = self.active_now
-        self.active_now = len(self.activity)
+        self.cull_idle()
         running_time = (datetime.utcnow() - start_time).total_seconds()
 
         # save how many times zero engines have been active
@@ -66,8 +66,8 @@ class EngineCuller(object):
         # the number of engines is going down after having reached a maximum.
         # or when there have always only been zero engines, this only starts
         # counting after 1hr.
-        print_string = 'Running time is {} seconds, active now: {}, last time active: {}, max active last time: {}.'
-        app_log.debug(print_string.format(running_time, self.active_now, last_active, self.max_active))
+        print_string = 'Running time is {} seconds, active now: {}, last time active: {}, max active last time: {}, num_times_zero: {}'
+        app_log.debug(print_string.format(running_time, self.active_now, last_active, self.max_active, self.num_times_zero))
         if (len(self.activity) == 0 and
             self.active_now < self.max_active and
             last_active == self.active_now or
@@ -76,15 +76,18 @@ class EngineCuller(object):
             sys.exit()
         self.max_active = max(self.max_active, self.active_now)
 
-
     def cull_idle(self):
         """Cull any engines that have become idle for too long."""
         idle_ids = []
+        self.active_now = len(self.activity)
         for eid, state in self.activity.items():
             idle = (datetime.utcnow() - state['last_active']).total_seconds()
             app_log.debug("%s idle since %s", eid, state['last_active'])
             if idle > self.timeout:
                 idle_ids.append(eid)
+            if idle > self.interval:
+                self.active_now -= 1
+
         if idle_ids:
             app_log.info("Culling engines %s", idle_ids)
             self.client.shutdown(
@@ -95,7 +98,7 @@ class EngineCuller(object):
 
 def kill_running_cullers(profile):
     """Kills previous running hpc05_cullers that use the same profile."""
-    username = os.environ.get('USER','username')
+    username = os.environ.get('USER', 'username')
     culler_procs = []
     for proc in psutil.process_iter():
         try:
@@ -132,7 +135,8 @@ def main():
     options.parse_command_line()
     kill_running_cullers(profile=options.options.profile)
     loop = ioloop.IOLoop.current()
-    culler = EngineCuller(Client(profile=options.options.profile), options.options.timeout)
+    culler = EngineCuller(Client(profile=options.options.profile),
+                          options.options.timeout, options.options.interval)
 
     ioloop.PeriodicCallback(
         culler.update_state, options.options.interval * 1000).start()
