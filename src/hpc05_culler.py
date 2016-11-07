@@ -66,8 +66,8 @@ class EngineCuller(object):
         # the number of engines is going down after having reached a maximum.
         # or when there have always only been zero engines, this only starts
         # counting after 1hr.
-        print_string = 'Running time is {} seconds, active now: {}, last time active: {}, max active last time: {}, num_times_zero: {}'
-        app_log.debug(print_string.format(running_time, self.active_now, last_active, self.max_active, self.num_times_zero))
+        print_string = 'Running time is {} seconds, active now: {}, last time active: {}, max active last time: {}'
+        app_log.debug(print_string.format(running_time, self.active_now, last_active, self.max_active))
         if (len(self.activity) == 0 and
             self.active_now < self.max_active and
             last_active == self.active_now or
