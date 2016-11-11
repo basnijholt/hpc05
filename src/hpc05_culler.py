@@ -70,8 +70,7 @@ class EngineCuller(object):
         app_log.debug(print_string.format(running_time, self.active_now, last_active, self.max_active))
         if (len(self.activity) == 0 and
             self.active_now < self.max_active and
-            last_active == self.active_now or
-            self.num_times_zero > 10):
+            last_active == self.active_now or self.num_times_zero > 10):
             self.client.shutdown(hub=True)
             sys.exit()
         self.max_active = max(self.max_active, self.active_now)
@@ -88,7 +87,7 @@ class EngineCuller(object):
             if idle > self.interval:
                 self.active_now -= 1
 
-        if idle_ids:
+        if len(idle_ids) == len(self.activity):
             app_log.info("Culling engines %s", idle_ids)
             self.client.shutdown(
                 [eid for eid in idle_ids if eid in self.client.ids])
