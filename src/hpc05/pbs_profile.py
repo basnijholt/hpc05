@@ -19,18 +19,31 @@ def line_prepender(filename, line):
         line = "\n".join(line)
     with open(filename, 'r') as f:
         content = f.read()
-        f.seek(0, 0)
-        f.write(line.rstrip('\r\n') + '\n' + content)
+    with open(filename, 'w') as f:
+        f.write(line + '\n' + content)
+
+
+def create_parallel_profile(profile):
+    cmd = [sys.executable, "-E", "-c", "from IPython import start_ipython; start_ipython()",
+           "profile", "create", profile, "--parallel"]
+    subprocess.check_call(cmd)
 
 
 def create_pbs_profile(profile='pbs'):
-    shutil.rmtree(os.path.expanduser('~/.ipython/profile_{}'.format(profile)))
-    subprocess.check_call('ipython profile create --parallel --profile={}'.format(profile))
+    try:
+        shutil.rmtree(os.path.expanduser('~/.ipython/profile_{}'.format(profile)))
+    except:
+        pass
+    
+    create_parallel_profile(profile)
 
     f = {'ipcluster_config.py': ["c.IPClusterStart.controller_launcher_class = 'PBSControllerLauncher'", 
                                  "c.IPClusterEngines.engine_launcher_class = 'PBSEngineSetLauncher'"],
          'ipcontroller_config.py': "c.HubFactory.ip = u'*'",
-         'ipengine_config.py': "c.IPEngineApp.wait_for_url_file = 60"}
+         'ipengine_config.py': ["c.IPEngineApp.wait_for_url_file = 60",
+                                "c.IPEngineApp.startup_command = 'import numpy as np;" +
+                                "import kwant, os, sys; from types import SimpleNamespace'"
+]}
 
     for fname, line in f.items():
         fname = os.path.join(locate_profile(profile), fname)
