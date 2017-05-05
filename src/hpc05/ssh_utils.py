@@ -29,8 +29,11 @@ def setup_ssh(hostname='hpc05', username=None, password=None):
         ssh.connect(hostname, username=username, allow_agent=True,
                     password=password)
     except PasswordRequiredException:
-        raise Exception('Enter `password` argument or run `rm -f ~/ssh-agent.socket; ssh-agent -a ~/ssh-agent.socket;' +
-                        'export SSH_AUTH_SOCK=~/ssh-agent.socket; ssh-add` on the local machine')
+        msg = ['Enter `password` argument or run',
+               'rm -f ~/ssh-agent.socket; ssh-agent -a ~/ssh-agent.socket; '
+               'export SSH_AUTH_SOCK=~/ssh-agent.socket; ssh-add',
+               'on the local machine']
+        raise Exception('\n'.join(msg))
     return ssh
 
 
@@ -42,8 +45,7 @@ def check_bash_profile(ssh, username):
         try:
             fname = '/home/{}/.bash_profile'.format(username)
             sftp.stat(fname)
-            source_profile = 'source {}; '.format(fname) 
+            source_profile = 'source {}; '.format(fname)
         except FileNotFoundError:
             source_profile = ''
     return source_profile
-
