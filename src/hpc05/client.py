@@ -23,16 +23,16 @@ def on_hostname(hostname='hpc05'):
 
 def get_culler_cmd(profile='pbs', ssh=None,
                    username=None, extra_args=None):
-    cmd = ('nohup python -m hpc05_culler --logging=debug --profile={} ',
+    cmd = ('nohup python -m hpc05_culler --logging=debug --profile={} ' +
            '--log_file_prefix=culler.log {} &')
+    cmd = cmd.format(profile, extra_args)
+
     if on_hostname():
         fn = os.path.expanduser('~/.bash_profile')
         source_profile = 'source {}; '.format(fn) if os.path.isfile(fn) else ''
-        cmd = source_profile + cmd.format(profile, extra_args)
     else:
         source_profile = check_bash_profile(ssh, username)
-        cmd = source_profile + cmd.format(profile, extra_args)
-    return cmd
+    return source_profile + cmd
 
 
 class Client(ipyparallel.Client):
@@ -82,7 +82,9 @@ class Client(ipyparallel.Client):
             # Don't connect over ssh if this is run on the hpc05.
             if culler:
                 cmd = get_culler_cmd(profile, extra_args=extra_args)
-                subprocess.check_output(cmd.split())
+                subprocess.Popen(cmd, shell=True,
+                                 stdout=open('/dev/null', 'w'),
+                                 stderr=open('logfile.log', 'a'))
             super(Client, self).__init__(profile=profile, *args, **kwargs)
 
         else:
@@ -110,9 +112,9 @@ class Client(ipyparallel.Client):
                     sftp.get(remote_json, self.json_filename)
                 except FileNotFoundError:
                     raise Exception(
-                        'Could not copy the json file of the pbs cluster, the',
-                        ' `ipcluster` probably is not running or you have no ',
-                        '`profile_pbs`, create with ',
+                        'Could not copy the json file of the pbs cluster, the' +
+                        ' `ipcluster` probably is not running or you have no ' +
+                        '`profile_pbs`, create with ' +
                         '`hpc05.pbs_profile.create_remote_pbs_profile()`')
 
             # Read the json file
