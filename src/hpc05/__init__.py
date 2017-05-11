@@ -1,8 +1,9 @@
 from ._version import get_versions
 __all__ = []
 available = [('client', ['Client']),
-             ('pbs_profile',
-             ['create_pbs_profile', 'create_remote_pbs_profile'])]
+             ('pbs_profile', ['create_pbs_profile',
+                              'create_remote_pbs_profile']),
+             ('utils', ['check_difference_in_envs'])]
 for module, names in available:
     exec('from .{0} import {1}'.format(module, ', '.join(names)))
     __all__.extend(names)

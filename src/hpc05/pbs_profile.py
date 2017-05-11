@@ -5,8 +5,7 @@ import subprocess
 import sys
 
 # Third party imports
-from IPython.paths import locate_profile, get_ipython_dir
-from IPython.core.profiledir import ProfileDir
+from IPython.paths import locate_profile
 
 # Local imports
 from .ssh_utils import get_info_from_ssh_config, setup_ssh, check_bash_profile
@@ -34,16 +33,15 @@ def create_pbs_profile(profile='pbs'):
         shutil.rmtree(os.path.expanduser('~/.ipython/profile_{}'.format(profile)))
     except:
         pass
-    
+
     create_parallel_profile(profile)
 
-    f = {'ipcluster_config.py': ["c.IPClusterStart.controller_launcher_class = 'PBSControllerLauncher'", 
+    f = {'ipcluster_config.py': ["c.IPClusterStart.controller_launcher_class = 'PBSControllerLauncher'",
                                  "c.IPClusterEngines.engine_launcher_class = 'PBSEngineSetLauncher'"],
          'ipcontroller_config.py': "c.HubFactory.ip = u'*'",
          'ipengine_config.py': ["c.IPEngineApp.wait_for_url_file = 60",
                                 "c.IPEngineApp.startup_command = 'import numpy as np;" +
-                                "import kwant, os, sys; from types import SimpleNamespace'"
-]}
+                                "import kwant, os, sys'"]}
 
     for fname, line in f.items():
         fname = os.path.join(locate_profile(profile), fname)
