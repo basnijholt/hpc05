@@ -8,9 +8,8 @@ import sys
 from IPython.paths import locate_profile
 
 # Local imports
-from .ssh_utils import get_info_from_ssh_config, setup_ssh, check_bash_profile
-
-os.environ['SSH_AUTH_SOCK'] = os.path.expanduser('~/ssh-agent.socket')
+from .ssh_utils import get_info_from_ssh_config, setup_ssh
+from .utils import bash
 
 
 def line_prepender(filename, line):
@@ -28,16 +27,20 @@ def create_parallel_profile(profile):
     subprocess.check_call(cmd)
 
 
-def create_pbs_profile(profile='pbs'):
+def create_pbs_profile(profile='pbs', local_controller=True):
     try:
-        shutil.rmtree(os.path.expanduser('~/.ipython/profile_{}'.format(profile)))
+        shutil.rmtree(os.path.expanduser(f'~/.ipython/profile_{profile}'))
     except:
         pass
 
     create_parallel_profile(profile)
 
-    f = {'ipcluster_config.py': ["c.IPClusterStart.controller_launcher_class = 'PBSControllerLauncher'",
-                                 "c.IPClusterEngines.engine_launcher_class = 'PBSEngineSetLauncher'"],
+    ipcluster = ["c.IPClusterEngines.engine_launcher_class = 'PBSEngineSetLauncher'"]
+
+    if not local_controller:
+        ipcluster += ["c.IPClusterStart.controller_launcher_class = 'PBSControllerLauncher'"]
+
+    f = {'ipcluster_config.py': ipcluster,
          'ipcontroller_config.py': "c.HubFactory.ip = u'*'",
          'ipengine_config.py': ["c.IPEngineApp.wait_for_url_file = 60",
                                 "c.IPEngineApp.startup_command = 'import numpy as np;" +
@@ -47,18 +50,17 @@ def create_pbs_profile(profile='pbs'):
         fname = os.path.join(locate_profile(profile), fname)
         line_prepender(fname, line)
 
+    print(f'Succesfully created a new {profile} profile.')
 
-def create_remote_pbs_profile(hostname='hpc05', username=None, password=None, profile="pbs"):
-    # Get username from ssh_config
-    if username is None:
-        try:
-            username, hostname = get_info_from_ssh_config(hostname)
-        except KeyError:
-            raise Exception('hostname not in ~/.ssh/config, enter username')
 
-    # Make ssh connection
+def create_remote_pbs_profile(hostname='hpc05', username=None,
+                              password=None, profile="pbs"):
     with setup_ssh(hostname, username, password) as ssh:
-        source_profile = check_bash_profile(ssh, username)
-        cmd = 'python -c "import hpc05; hpc05.pbs_profile.create_pbs_profile(\'{}\')"'
-        stdin, stdout, sterr = ssh.exec_command(source_profile + cmd.format(profile))
-        return stdout.readlines(), sterr.readlines()
+        cmd = f'import hpc05; hpc05.pbs_profile.create_pbs_profile("{profile}")'
+        cmd = f"python -c '{cmd}'"
+        stdin, stdout, stderr = ssh.exec_command(cmd, get_pty=True)
+        out, err = stdout.readlines(), stderr.readlines()
+
+        for lines in [out, err]:
+            for line in lines:
+                print(line.rstrip('\n'))

@@ -12,5 +12,5 @@ setup(name='hpc05',
       packages=['hpc05'],
       py_modules=["hpc05_culler"],
       install_requires=['ipyparallel', 'pexpect', 'pyzmq', 'paramiko',
-                        'sshtunnel', 'tornado', 'psutil'],
+                        'tornado', 'psutil'],
       zip_safe=False)

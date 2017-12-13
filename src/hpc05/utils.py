@@ -1,12 +1,27 @@
+#!/usr/bin/env python
+
+import os.path
+import socket
 import subprocess
-from .ssh_utils import setup_ssh
 import sys
+import time
+
+from .ssh_utils import setup_ssh
+
+
+def on_hostname(hostname='hpc05'):
+    return socket.gethostname() == hostname
+
+
+def bash(cmd):
+    # https://stackoverflow.com/a/25099813
+    return f'/bin/bash -i -c "{cmd}"'
 
 
 def get_local_env(env=None):
     if env is None:
         env = sys.exec_prefix.split('/')[-1]  # conda environment name
-    cmd = 'conda list --export -n {}'.format(env).split()
+    cmd = f'conda list --export -n {env}'.split()
     local_env = subprocess.check_output(cmd).decode('utf-8')
     local_env = [l for l in local_env.split('\n')
                  if not l.startswith('# ') and l != '']
@@ -14,17 +29,17 @@ def get_local_env(env=None):
 
 
 def get_remote_env(env=None):
-    ssh = setup_ssh()
-    cmd = 'conda list --export'
-    if env:
-        cmd += " -n {}".format(env)
-    stdin, stdout, sterr = ssh.exec_command(cmd)
-    remote_env = [l[:-1] for l in stdout.readlines() if not l.startswith('# ')]
+    with setup_ssh() as ssh:
+        cmd = 'conda list --export'
+        if env:
+            cmd += f" -n {env}"
+        stdin, stdout, sterr = ssh.exec_command(cmd, get_pty=True)
+        remote_env = [l[:-1] for l in stdout.readlines() if not l.startswith('# ')]
     return remote_env
 
 
 def check_difference_in_envs(local_env_name=None, remote_env_name=None):
-    """Only works when setting the Python env in .bash_profile or .bash_rc on the
+    """Only works when setting the Python env in your .bash_rc on the
     remote machine."""
     local_env = get_local_env(local_env_name)
     remote_env = get_remote_env(remote_env_name)
@@ -41,3 +56,41 @@ def check_difference_in_envs(local_env_name=None, remote_env_name=None):
     return {'missing_packages_on_remote': diff(not_on_local, not_on_remote),
             'missing_packages_on_local': diff(not_on_remote, not_on_local),
             'mismatches': sorted(not_on_local + not_on_remote)}
+
+
+def wait_for_succesful_start(stdout, decode, timeout=60):
+    lines = iter(stdout.readline, b'')
+    t_start = time.time()
+    done = False
+    while not done:
+        line = next(lines)
+        if decode:
+            line = line.decode('utf-8')
+        line = line.rstrip('\n').rstrip()
+        if line:
+            print(line)
+        done = 'Engines appear to have started successfully' in line
+        if time.time() - t_start > timeout:
+            raise Exception(f'Failed to start a ipcluster in {timeout} seconds.')
+        time.sleep(0.01)
+
+
+def start_ipcluster(n, profile, timeout=60):
+    print(f'Launching {n} engines in a ipcluster')
+    cmd = f'ipcluster start --profile={profile} --n={n}'
+    proc = subprocess.Popen(cmd.split(),
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT)
+
+    wait_for_succesful_start(proc.stdout, decode=True)
+
+
+def start_remote_ipcluster(n, profile='pbs', hostname='hpc05',
+                           username=None, password=None, timeout=60):
+    # Make ssh connection
+    with setup_ssh(hostname, username, password) as ssh:
+        cmd = f"import hpc05; hpc05.utils.start_ipcluster({n}, '{profile}')"
+        cmd = f'python -c "{cmd}"'
+        stdin, stdout, sterr = ssh.exec_command(cmd, get_pty=True)
+
+        wait_for_succesful_start(stdout, decode=False, timeout=timeout)
