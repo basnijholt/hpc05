@@ -86,14 +86,7 @@ def start_ipcluster(n, profile, timeout=60):
 
 
 def start_remote_ipcluster(n, profile='pbs', hostname='hpc05',
-                           username=None, password=None, timeout=60,
-                           del_old_ipcluster=False):
-
-    # Delete clusters that are already running.
-    if del_old_ipcluster:
-        kill_old_cluster(hostname, username, password)
-
-    # Make ssh connection
+                           username=None, password=None, timeout=60):
     with setup_ssh(hostname, username, password) as ssh:
         cmd = f"import hpc05; hpc05.utils.start_ipcluster({n}, '{profile}')"
         cmd = f'python -c "{cmd}"'
@@ -102,7 +95,7 @@ def start_remote_ipcluster(n, profile='pbs', hostname='hpc05',
         wait_for_succesful_start(stdout, decode=False, timeout=timeout)
 
 
-def kill_old_cluster(hostname='hpc05', username=None, password=None):
+def kill_remote_cluster(hostname='hpc05', username=None, password=None):
     try:
         with hpc05.ssh_utils.setup_ssh(hostname, username, password) as ssh:
             stdin, stdout, stderr = ssh.exec_command('del')
