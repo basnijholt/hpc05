@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import glob
 import os.path
 import socket
 import subprocess
@@ -72,12 +73,35 @@ def wait_for_succesful_start(stdout, decode, timeout=60):
         done = 'Engines appear to have started successfully' in line
         if time.time() - t_start > timeout:
             raise Exception(f'Failed to start a ipcluster in {timeout} seconds.')
+
+        if 'Cluster is already running with' in line:
+            # Currently not working!
+            raise Exception(f'Failed to start a ipcluster because a cluster is '
+                              'already running, run '
+                              '`hpc05.utils.kill_remote_ipcluster()` or use '
+                              'your `del` alias.')
         time.sleep(0.01)
 
 
 def start_ipcluster(n, profile, timeout=60):
-    print(f'Launching {n} engines in a ipcluster')
-    cmd = f'ipcluster start --profile={profile} --n={n}'
+    log_file_pattern = os.path.expanduser(f'~/.ipython/profile_{profile}/log/ipcluster-*.log')
+    for f in glob.glob(log_file_pattern):
+        # Remove old log files.
+        os.remove(f)
+
+    print(f'Launching {n} engines in a ipcluster.')
+    cmd = f'ipcluster start --profile={profile} --n={n} --log-to-file --daemon &'
+
+    # For an unknown reason `subprocess.Popen(cmd.split())` doesn't work when
+    # running `start_remote_ipcluster` and connecting to it, so we use os.system.
+    os.system(cmd)
+
+    time.sleep(5)  # We wait a bit since we need the log file to exit
+
+    # We don't PIPE stdout of the process above because we need a detached
+    # process so we tail the log file.
+    log_file = glob.glob(log_file_pattern)[0]
+    cmd = f'tail -F {log_file}'
     proc = subprocess.Popen(cmd.split(),
                             stdout=subprocess.PIPE,
                             stderr=subprocess.STDOUT)
@@ -91,7 +115,6 @@ def start_remote_ipcluster(n, profile='pbs', hostname='hpc05',
         cmd = f"import hpc05; hpc05.utils.start_ipcluster({n}, '{profile}')"
         cmd = f'python -c "{cmd}"'
         stdin, stdout, stderr = ssh.exec_command(cmd, get_pty=True)
-
         wait_for_succesful_start(stdout, decode=False, timeout=timeout)
 
 
