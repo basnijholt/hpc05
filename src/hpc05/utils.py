@@ -95,7 +95,7 @@ def start_remote_ipcluster(n, profile='pbs', hostname='hpc05',
         wait_for_succesful_start(stdout, decode=False, timeout=timeout)
 
 
-def kill_remote_cluster(hostname='hpc05', username=None, password=None):
+def kill_remote_ipcluster(hostname='hpc05', username=None, password=None):
     try:
         with hpc05.ssh_utils.setup_ssh(hostname, username, password) as ssh:
             stdin, stdout, stderr = ssh.exec_command('del')
