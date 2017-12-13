@@ -96,11 +96,11 @@ def start_remote_ipcluster(n, profile='pbs', hostname='hpc05',
 
 
 def kill_remote_ipcluster(hostname='hpc05', username=None, password=None):
-    try:
-        with hpc05.ssh_utils.setup_ssh(hostname, username, password) as ssh:
-            stdin, stdout, stderr = ssh.exec_command('del')
+    with setup_ssh(hostname, username, password) as ssh:
+        stdin, stdout, stderr = ssh.exec_command('del')
+        try:
             lines = stdout.readlines()
             for line in lines:
                 print(line)
-    except:
-        pass
+        except:
+            pass
