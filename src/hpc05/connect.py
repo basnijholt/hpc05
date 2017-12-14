@@ -1,0 +1,127 @@
+import glob
+import os.path
+import subprocess
+import time
+
+from .client import Client
+
+from ipyparallel.error import NoEnginesRegistered
+
+from .ssh_utils import setup_ssh
+
+
+def wait_for_succesful_start(stdout, decode, timeout=60):
+    lines = iter(stdout.readline, b'')
+    t_start = time.time()
+    done = False
+    while not done:
+        line = next(lines)
+        if decode:
+            line = line.decode('utf-8')
+        line = line.rstrip('\n').rstrip()
+        if line:
+            print(line)
+        done = 'Engines appear to have started successfully' in line
+        if time.time() - t_start > timeout:
+            raise Exception(f'Failed to start a ipcluster in {timeout} seconds.')
+
+        if 'Cluster is already running with' in line:
+            # Currently not working!
+            raise Exception(f'Failed to start a ipcluster because a cluster is '
+                              'already running, run '
+                              '`hpc05.kill_remote_ipcluster()` or use '
+                              'your `del` alias.')
+        time.sleep(0.01)
+
+
+def start_ipcluster(n, profile, timeout=60):
+    log_file_pattern = os.path.expanduser(f'~/.ipython/profile_{profile}/log/ipcluster-*.log')
+    for f in glob.glob(log_file_pattern):
+        # Remove old log files.
+        os.remove(f)
+
+    print(f'Launching {n} engines in a ipcluster.')
+    cmd = f'ipcluster start --profile={profile} --n={n} --log-to-file --daemon &'
+
+    # For an unknown reason `subprocess.Popen(cmd.split())` doesn't work when
+    # running `start_remote_ipcluster` and connecting to it, so we use os.system.
+    os.system(cmd)
+
+    time.sleep(5)  # We wait a bit since we need the log file to exit
+
+    # We don't PIPE stdout of the process above because we need a detached
+    # process so we tail the log file.
+    log_file = glob.glob(log_file_pattern)[0]
+    cmd = f'tail -F {log_file}'
+    proc = subprocess.Popen(cmd.split(),
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT)
+
+    wait_for_succesful_start(proc.stdout, decode=True)
+
+
+def start_remote_ipcluster(n, profile='pbs', hostname='hpc05',
+                           username=None, password=None, timeout=60):
+    with setup_ssh(hostname, username, password) as ssh:
+        cmd = f"import hpc05; hpc05.start_ipcluster({n}, '{profile}')"
+        cmd = f'python -c "{cmd}"'
+        stdin, stdout, stderr = ssh.exec_command(cmd, get_pty=True)
+        wait_for_succesful_start(stdout, decode=False, timeout=timeout)
+
+
+def kill_remote_ipcluster(hostname='hpc05', username=None, password=None):
+    with setup_ssh(hostname, username, password) as ssh:
+        stdin, stdout, stderr = ssh.exec_command('del')
+        try:
+            lines = stdout.readlines()
+            for line in lines:
+                print(line)
+        except:
+            pass
+
+
+def connect_ipcluster(n, profile='pbs', folder=None, timeout=60):
+    client = Client(profile=profile, timeout=timeout)
+    print("Connected to hpc05")
+    print(f'Initially connected to {len(client)} engines.')
+    time.sleep(2)
+    try:
+        dview = client[:]
+    except NoEnginesRegistered:
+        # This can happen, we just need to wait a little longer.
+        pass
+
+    t_start = time.time()
+    done = len(client) == n
+    while not done:
+        dview = client[:]
+        done = len(client) == n
+        if time.time() - t_start > timeout:
+            raise Exception(f'Not all connected after {timeout} seconds.')
+        time.sleep(1)
+
+    print(f'Connected to all {len(client)} engines.')
+    dview.use_dill()
+    lview = client.load_balanced_view()
+
+    if folder is not None:
+        print(f'Adding {folder} to path.')
+        get_ipython().magic(f"px import sys, os; sys.path.append(os.path.expanduser('{folder}'))")
+
+    return client, dview, lview
+
+
+def start_and_connect(n, profile='pbs', folder=None):
+    start_ipcluster(n, profile)
+    return connect_ipcluster(n, profile, folder)
+
+
+def start_remote_and_connect(n, profile='pbs', folder=None, hostname='hpc05',
+                             username=None, password=None,
+                             del_old_ipcluster=True):
+    if del_old_ipcluster:
+        kill_remote_ipcluster(hostname, username, password)
+
+    start_remote_ipcluster(n, profile, hostname, username, password)
+    time.sleep(2)
+    return connect_ipcluster(n, profile, folder)
