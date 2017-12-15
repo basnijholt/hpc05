@@ -100,7 +100,12 @@ def connect_ipcluster(n, profile='pbs', folder=None, timeout=60):
     return client, dview, lview
 
 
-def start_and_connect(n, profile='pbs', folder=None, timeout=60):
+def start_and_connect(n, profile='pbs', folder=None,
+                      del_old_ipcluster=True, timeout=60):
+    if del_old_ipcluster:
+        kill_ipcluster()
+        print('Killed old intances of ipcluster.')
+
     start_ipcluster(n, profile)
     return connect_ipcluster(n, profile, folder, timeout)
 
@@ -110,14 +115,45 @@ def start_remote_and_connect(n, profile='pbs', folder=None, hostname='hpc05',
                              del_old_ipcluster=True, timeout=60):
     if del_old_ipcluster:
         kill_remote_ipcluster(hostname, username, password)
+        print('Killed old intances of ipcluster.')
 
     start_remote_ipcluster(n, profile, hostname, username, password)
     time.sleep(2)
     return connect_ipcluster(n, profile, folder, timeout)
 
 
-def kill_remote_ipcluster(hostname='hpc05', username=None, password=None):
+def kill_ipcluster():
     """Kill your ipcluster and cleanup the files.
+
+    This should do the same as the following bash function (recommended:
+    add this in your `.bash_profile` / `.bashrc`):
+    ```bash
+    del() {
+        qselect -u $USER | xargs qdel
+        rm -f *.hpc05.hpc* ipengine* ipcontroller* pbs_*
+        pkill -f hpc05_culler 2> /dev/null
+        pkill -f ipcluster 2> /dev/null
+        pkill -f ipengine 2> /dev/null
+        pkill -f ipyparallel.controller 2> /dev/null
+        pkill -f ipyparallel.engines 2> /dev/null
+    }
+    ```
+    """
+    clean_up_cmds = ["qselect -u $USER | xargs qdel 2> /dev/null",
+                     "rm -f *.hpc05.hpc* ipengine* ipcontroller* pbs_*",
+                     "pkill -f hpc05_culler 2> /dev/null",
+                     "pkill -f ipcluster 2> /dev/null",
+                     "pkill -f ipengine 2> /dev/null",
+                     "pkill -f ipyparallel.controller 2> /dev/null",
+                     "pkill -f ipyparallel.engines 2> /dev/null"]
+
+    cmd = '; '.join(clean_up_cmds)
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
+    process.wait()
+
+
+def kill_remote_ipcluster(hostname='hpc05', username=None, password=None):
+    """Kill your remote ipcluster and cleanup the files.
 
     This should do the same as the following bash function (recommended:
     add this in your `.bash_profile` / `.bashrc`):
@@ -134,50 +170,12 @@ def kill_remote_ipcluster(hostname='hpc05', username=None, password=None):
     ```
     """
     with setup_ssh(hostname, username, password) as ssh:
-
-        clean_up_cmds = ["qselect -u $USER | xargs qdel",
-                         "rm -f *.hpc05.hpc* ipengine* ipcontroller* pbs_*",
-                         "pkill -f hpc05_culler 2> /dev/null",
-                         "pkill -f ipcluster 2> /dev/null",
-                         "pkill -f ipengine 2> /dev/null",
-                         "pkill -f ipyparallel.controller 2> /dev/null",
-                         "pkill -f ipyparallel.engines 2> /dev/null"]
-
-        stdin, stdout, stderr = ssh.exec_command('; '.join(clean_up_cmds))
+        cmd = f"import hpc05; hpc05.connect.kill_ipcluster()"
+        cmd = f'python -c "{cmd}"'
+        stdin, stdout, stderr = ssh.exec_command(cmd, get_pty=True)
         try:
             lines = stdout.readlines()
             for line in lines:
                 print(line)
         except:
             pass
-
-
-def kill_ipcluster(hostname='hpc05', username=None, password=None):
-    """Kill your ipcluster and cleanup the files.
-
-    This should do the same as the following bash function (recommended:
-    add this in your `.bash_profile` / `.bashrc`):
-    ```bash
-    del() {
-        qselect -u $USER | xargs qdel
-        rm -f *.hpc05.hpc* ipengine* ipcontroller* pbs_*
-        pkill -f hpc05_culler 2> /dev/null
-        pkill -f ipcluster 2> /dev/null
-        pkill -f ipengine 2> /dev/null
-        pkill -f ipyparallel.controller 2> /dev/null
-        pkill -f ipyparallel.engines 2> /dev/null
-    }
-    ```
-    """
-    clean_up_cmds = ["qselect -u $USER | xargs qdel",
-                     "rm -f *.hpc05.hpc* ipengine* ipcontroller* pbs_*",
-                     "pkill -f hpc05_culler 2> /dev/null",
-                     "pkill -f ipcluster 2> /dev/null",
-                     "pkill -f ipengine 2> /dev/null",
-                     "pkill -f ipyparallel.controller 2> /dev/null",
-                     "pkill -f ipyparallel.engines 2> /dev/null"]
-
-    cmd = '; '.join(clean_up_cmds)
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
-    stdout = process.communicate()[0].decode('utf-8').rstrip('\n').rstrip()
-    print(stdout)
