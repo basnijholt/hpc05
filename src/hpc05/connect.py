@@ -70,8 +70,33 @@ def start_remote_ipcluster(n, profile='pbs', hostname='hpc05',
 
 
 def kill_remote_ipcluster(hostname='hpc05', username=None, password=None):
+    """Kill your ipcluster and cleanup the files.
+
+    This should do the same as the following bash function (recommended:
+    add this in your `.bash_profile` / `.bashrc`):
+    ```bash
+    del() {
+        qselect -u $USER | xargs qdel
+        rm -f *.hpc05.hpc* ipengine* ipcontroller* pbs_*
+        pkill -f hpc05_culler 2> /dev/null
+        pkill -f ipcluster 2> /dev/null
+        pkill -f ipengine 2> /dev/null
+        pkill -f ipyparallel.controller 2> /dev/null
+        pkill -f ipyparallel.engines 2> /dev/null
+    }
+    ```
+    """
     with setup_ssh(hostname, username, password) as ssh:
-        stdin, stdout, stderr = ssh.exec_command('del')
+
+        clean_up_cmds = ["qselect -u $USER | xargs qdel",
+                         "rm -f *.hpc05.hpc* ipengine* ipcontroller* pbs_*",
+                         "pkill -f hpc05_culler 2> /dev/null",
+                         "pkill -f ipcluster 2> /dev/null",
+                         "pkill -f ipengine 2> /dev/null",
+                         "pkill -f ipyparallel.controller 2> /dev/null",
+                         "pkill -f ipyparallel.engines 2> /dev/null"]
+
+        stdin, stdout, stderr = ssh.exec_command('; '.join(clean_up_cmds))
         try:
             lines = stdout.readlines()
             for line in lines:
