@@ -139,17 +139,19 @@ def kill_ipcluster():
     }
     ```
     """
-    clean_up_cmds = ["qselect -u $USER | xargs qdel 2> /dev/null",
+    clean_up_cmds = ["qselect -u $USER | xargs qdel",
                      "rm -f *.hpc05.hpc* ipengine* ipcontroller* pbs_*",
-                     "pkill -f hpc05_culler 2> /dev/null",
-                     "pkill -f ipcluster 2> /dev/null",
-                     "pkill -f ipengine 2> /dev/null",
-                     "pkill -f ipyparallel.controller 2> /dev/null",
-                     "pkill -f ipyparallel.engines 2> /dev/null"]
+                     "pkill -f hpc05_culler",
+                     "pkill -f ipcluster",
+                     "pkill -f ipengine",
+                     "pkill -f ipyparallel.controller",
+                     "pkill -f ipyparallel.engines"]
 
-    cmd = '; '.join(clean_up_cmds)
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
-    process.wait()
+    clean_up_cmds = [cmd + ' 2> /dev/null' for cmd in clean_up_cmds]
+
+    for cmd in clean_up_cmds:
+        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
+        process.wait()
 
 
 def kill_remote_ipcluster(hostname='hpc05', username=None, password=None):
