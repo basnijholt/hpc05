@@ -27,7 +27,7 @@ def create_parallel_profile(profile):
     subprocess.check_call(cmd)
 
 
-def create_pbs_profile(profile='pbs', local_controller=True):
+def create_pbs_profile(profile='pbs'):
     try:
         shutil.rmtree(os.path.expanduser(f'~/.ipython/profile_{profile}'))
     except:
@@ -35,16 +35,14 @@ def create_pbs_profile(profile='pbs', local_controller=True):
 
     create_parallel_profile(profile)
 
-    ipcluster = ["c.IPClusterEngines.engine_launcher_class = 'PBSEngineSetLauncher'"]
-
-    if not local_controller:
-        ipcluster += ["c.IPClusterStart.controller_launcher_class = 'PBSControllerLauncher'"]
+    ipcluster = ["c.IPClusterEngines.engine_launcher_class = 'PBSEngineSetLauncher'",
+                 "c.IPClusterStart.controller_launcher_class = 'PBSControllerLauncher'"]
 
     f = {'ipcluster_config.py': ipcluster,
-         'ipcontroller_config.py': "c.HubFactory.ip = u'*'",
-         'ipengine_config.py': ["c.IPEngineApp.wait_for_url_file = 60",
-                                "c.IPEngineApp.startup_command = 'import numpy as np;" +
-                                "import kwant, os, sys'"]}
+         'ipcontroller_config.py': ["c.HubFactory.ip = u'*'",
+                                    "c.HubFactory.registration_timeout = 600"],
+         'ipengine_config.py': ["c.IPEngineApp.wait_for_url_file = 300",
+                                "c.EngineFactory.timeout = 300"]}
 
     for fname, line in f.items():
         fname = os.path.join(locate_profile(profile), fname)
