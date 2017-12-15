@@ -27,7 +27,7 @@ def create_parallel_profile(profile):
     subprocess.check_call(cmd)
 
 
-def create_pbs_profile(profile='pbs'):
+def create_pbs_profile(profile='pbs', local_controller=True):
     try:
         shutil.rmtree(os.path.expanduser(f'~/.ipython/profile_{profile}'))
     except:
@@ -35,8 +35,9 @@ def create_pbs_profile(profile='pbs'):
 
     create_parallel_profile(profile)
 
-    ipcluster = ["c.IPClusterEngines.engine_launcher_class = 'PBSEngineSetLauncher'",
-                 "c.IPClusterStart.controller_launcher_class = 'PBSControllerLauncher'"]
+    ipcluster = ["c.IPClusterEngines.engine_launcher_class = 'PBSEngineSetLauncher'"]
+    if not local_controller:
+        ipcluster.append("c.IPClusterStart.controller_launcher_class = 'PBSControllerLauncher'")
 
     f = {'ipcluster_config.py': ipcluster,
          'ipcontroller_config.py': ["c.HubFactory.ip = u'*'",
@@ -52,9 +53,9 @@ def create_pbs_profile(profile='pbs'):
 
 
 def create_remote_pbs_profile(hostname='hpc05', username=None,
-                              password=None, profile="pbs"):
+                              password=None, profile="pbs", local_controller=True):
     with setup_ssh(hostname, username, password) as ssh:
-        cmd = f'import hpc05; hpc05.pbs_profile.create_pbs_profile("{profile}")'
+        cmd = f'import hpc05; hpc05.create_pbs_profile("{profile}, {local_controller}")'
         cmd = f"python -c '{cmd}'"
         stdin, stdout, stderr = ssh.exec_command(cmd, get_pty=True)
         out, err = stdout.readlines(), stderr.readlines()
