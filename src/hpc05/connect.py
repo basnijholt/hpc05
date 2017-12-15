@@ -57,7 +57,7 @@ def start_ipcluster(n, profile, timeout=60):
                             stdout=subprocess.PIPE,
                             stderr=subprocess.STDOUT)
 
-    wait_for_succesful_start(proc.stdout, decode=True)
+    wait_for_succesful_start(proc.stdout, decode=True, timeout=timeout)
 
 
 def start_remote_ipcluster(n, profile='pbs', hostname='hpc05',
@@ -67,6 +67,53 @@ def start_remote_ipcluster(n, profile='pbs', hostname='hpc05',
         cmd = f'python -c "{cmd}"'
         stdin, stdout, stderr = ssh.exec_command(cmd, get_pty=True)
         wait_for_succesful_start(stdout, decode=False, timeout=timeout)
+
+
+def connect_ipcluster(n, profile='pbs', folder=None, timeout=60):
+    client = Client(profile=profile, timeout=timeout)
+    print("Connected to hpc05")
+    print(f'Initially connected to {len(client)} engines.')
+    time.sleep(2)
+    try:
+        dview = client[:]
+    except NoEnginesRegistered:
+        # This can happen, we just need to wait a little longer.
+        pass
+
+    t_start = time.time()
+    done = len(client) == n
+    while not done:
+        dview = client[:]
+        done = len(client) == n
+        if time.time() - t_start > timeout:
+            raise Exception(f'Not all connected after {timeout} seconds.')
+        time.sleep(1)
+
+    print(f'Connected to all {len(client)} engines.')
+    dview.use_dill()
+    lview = client.load_balanced_view()
+
+    if folder is not None:
+        print(f'Adding {folder} to path.')
+        get_ipython().magic(f"px import sys, os; sys.path.append(os.path.expanduser('{folder}'))")
+
+    return client, dview, lview
+
+
+def start_and_connect(n, profile='pbs', folder=None, timeout=60):
+    start_ipcluster(n, profile)
+    return connect_ipcluster(n, profile, folder, timeout)
+
+
+def start_remote_and_connect(n, profile='pbs', folder=None, hostname='hpc05',
+                             username=None, password=None,
+                             del_old_ipcluster=True, timeout=60):
+    if del_old_ipcluster:
+        kill_remote_ipcluster(hostname, username, password)
+
+    start_remote_ipcluster(n, profile, hostname, username, password)
+    time.sleep(2)
+    return connect_ipcluster(n, profile, folder, timeout)
 
 
 def kill_remote_ipcluster(hostname='hpc05', username=None, password=None):
@@ -105,48 +152,32 @@ def kill_remote_ipcluster(hostname='hpc05', username=None, password=None):
             pass
 
 
-def connect_ipcluster(n, profile='pbs', folder=None, timeout=60):
-    client = Client(profile=profile, timeout=timeout)
-    print("Connected to hpc05")
-    print(f'Initially connected to {len(client)} engines.')
-    time.sleep(2)
-    try:
-        dview = client[:]
-    except NoEnginesRegistered:
-        # This can happen, we just need to wait a little longer.
-        pass
+def kill_ipcluster(hostname='hpc05', username=None, password=None):
+    """Kill your ipcluster and cleanup the files.
 
-    t_start = time.time()
-    done = len(client) == n
-    while not done:
-        dview = client[:]
-        done = len(client) == n
-        if time.time() - t_start > timeout:
-            raise Exception(f'Not all connected after {timeout} seconds.')
-        time.sleep(1)
+    This should do the same as the following bash function (recommended:
+    add this in your `.bash_profile` / `.bashrc`):
+    ```bash
+    del() {
+        qselect -u $USER | xargs qdel
+        rm -f *.hpc05.hpc* ipengine* ipcontroller* pbs_*
+        pkill -f hpc05_culler 2> /dev/null
+        pkill -f ipcluster 2> /dev/null
+        pkill -f ipengine 2> /dev/null
+        pkill -f ipyparallel.controller 2> /dev/null
+        pkill -f ipyparallel.engines 2> /dev/null
+    }
+    ```
+    """
+    clean_up_cmds = ["qselect -u $USER | xargs qdel",
+                     "rm -f *.hpc05.hpc* ipengine* ipcontroller* pbs_*",
+                     "pkill -f hpc05_culler 2> /dev/null",
+                     "pkill -f ipcluster 2> /dev/null",
+                     "pkill -f ipengine 2> /dev/null",
+                     "pkill -f ipyparallel.controller 2> /dev/null",
+                     "pkill -f ipyparallel.engines 2> /dev/null"]
 
-    print(f'Connected to all {len(client)} engines.')
-    dview.use_dill()
-    lview = client.load_balanced_view()
-
-    if folder is not None:
-        print(f'Adding {folder} to path.')
-        get_ipython().magic(f"px import sys, os; sys.path.append(os.path.expanduser('{folder}'))")
-
-    return client, dview, lview
-
-
-def start_and_connect(n, profile='pbs', folder=None):
-    start_ipcluster(n, profile)
-    return connect_ipcluster(n, profile, folder)
-
-
-def start_remote_and_connect(n, profile='pbs', folder=None, hostname='hpc05',
-                             username=None, password=None,
-                             del_old_ipcluster=True):
-    if del_old_ipcluster:
-        kill_remote_ipcluster(hostname, username, password)
-
-    start_remote_ipcluster(n, profile, hostname, username, password)
-    time.sleep(2)
-    return connect_ipcluster(n, profile, folder)
+    cmd = '; '.join(clean_up_cmds)
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
+    stdout = process.communicate()[0].decode('utf-8').rstrip('\n').rstrip()
+    print(stdout)
