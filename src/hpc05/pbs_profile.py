@@ -55,7 +55,7 @@ def create_pbs_profile(profile='pbs', local_controller=True):
 def create_remote_pbs_profile(hostname='hpc05', username=None,
                               password=None, profile="pbs", local_controller=True):
     with setup_ssh(hostname, username, password) as ssh:
-        cmd = f'import hpc05; hpc05.create_pbs_profile("{profile}, {local_controller}")'
+        cmd = f'import hpc05; hpc05.create_pbs_profile("{profile}", {local_controller})'
         cmd = f"python -c '{cmd}'"
         stdin, stdout, stderr = ssh.exec_command(cmd, get_pty=True)
         out, err = stdout.readlines(), stderr.readlines()
