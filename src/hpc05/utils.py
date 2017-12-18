@@ -35,7 +35,7 @@ def get_remote_env(env=None):
         if env:
             cmd += f" -n {env}"
         stdin, stdout, stderr = ssh.exec_command(cmd, get_pty=True)
-        remote_env = [l[:-1] for l in stdout.readlines() if not l.startswith('# ')]
+        remote_env = [l[:-1].rstrip('\r') for l in stdout.readlines() if not l.startswith('# ')]
     return remote_env
 
 
