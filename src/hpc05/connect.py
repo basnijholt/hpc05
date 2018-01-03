@@ -85,7 +85,10 @@ def connect_ipcluster(n, profile='pbs', folder=None, timeout=60):
     while not done:
         dview = client[:]
         done = len(client) == n
-        if time.time() - t_start > timeout:
+        t_diff = int(time.time() - t_start)
+        if t_diff % 10 == 0:
+            print(f'Connected to {len(client)} engines')
+        if t_diff > timeout:
             raise Exception(f'Not all connected after {timeout} seconds.')
         time.sleep(1)
 
