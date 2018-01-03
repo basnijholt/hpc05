@@ -27,7 +27,7 @@ def create_parallel_profile(profile):
     subprocess.check_call(cmd)
 
 
-def create_pbs_profile(profile='pbs', local_controller=True):
+def create_pbs_profile(profile='pbs', local_controller=False):
     try:
         shutil.rmtree(os.path.expanduser(f'~/.ipython/profile_{profile}'))
     except:
@@ -53,7 +53,7 @@ def create_pbs_profile(profile='pbs', local_controller=True):
 
 
 def create_remote_pbs_profile(hostname='hpc05', username=None,
-                              password=None, profile="pbs", local_controller=True):
+                              password=None, profile="pbs", local_controller=False):
     with setup_ssh(hostname, username, password) as ssh:
         cmd = f'import hpc05; hpc05.create_pbs_profile("{profile}", {local_controller})'
         cmd = f"python -c '{cmd}'"
