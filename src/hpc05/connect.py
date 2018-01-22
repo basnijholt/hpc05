@@ -27,10 +27,10 @@ def wait_for_succesful_start(stdout, decode, timeout=60):
 
         if 'Cluster is already running with' in line:
             # Currently not working!
-            raise Exception(f'Failed to start a ipcluster because a cluster is '
-                              'already running, run '
-                              '`hpc05.kill_remote_ipcluster()` or use '
-                              'your `del` alias.')
+            raise Exception('Failed to start a ipcluster because a cluster is '
+                            'already running, run '
+                            '`hpc05.kill_remote_ipcluster()` or use '
+                            'your `del` alias.')
         time.sleep(0.01)
 
 
@@ -38,6 +38,11 @@ def start_ipcluster(n, profile, timeout=60):
     log_file_pattern = os.path.expanduser(f'~/.ipython/profile_{profile}/log/ipcluster-*.log')
     for f in glob.glob(log_file_pattern):
         # Remove old log files.
+        os.remove(f)
+
+    pid_pattern = os.path.expanduser(f'~/.ipython/profile_{profile}/pid/*')
+    for f in glob.glob(pid_pattern):
+        # Remove old pid files.
         os.remove(f)
 
     print(f'Launching {n} engines in a ipcluster.')
