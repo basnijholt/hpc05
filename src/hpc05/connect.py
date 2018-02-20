@@ -88,7 +88,7 @@ def start_remote_ipcluster(n, profile='pbs', hostname='hpc05',
                            username=None, password=None, env_path=None, 
                            timeout=60):
     with setup_ssh(hostname, username, password) as ssh:
-        cmd = f"import hpc05; hpc05.start_ipcluster({n}, '{profile}', '{env_path}', '{timeout}')"
+        cmd = f"import hpc05; hpc05.start_ipcluster({n}, '{profile}', '{env_path}', {timeout})"
         cmd = f'python -c "{cmd}"'
         stdin, stdout, stderr = ssh.exec_command(cmd, get_pty=True)
         wait_for_succesful_start(stdout, decode=False, timeout=timeout)
