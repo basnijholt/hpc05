@@ -16,8 +16,11 @@ from .ssh_utils import setup_ssh
 from .utils import bash, on_hostname
 
 
-def get_culler_cmd(profile='pbs', culler_args=None):
-    cmd = ('nohup python -m hpc05_culler --logging=debug '
+def get_culler_cmd(profile='pbs', env_path=None, culler_args=None):
+    python = 'python'
+    if env_path:
+        python = os.path.join(os.path.expanduser(env_path), 'bin', python)
+    cmd = (f'nohup {python} -m hpc05_culler --logging=debug '
            f'--profile={profile} --log_file_prefix=culler.log {culler_args} &')
     return bash(cmd)
 
@@ -39,6 +42,10 @@ class Client(ipyparallel.Client):
         Controls starting of the culler. Default: True.
     culler_args : str
         Add arguments to the culler. e.g. '--timeout=200'
+    env_path : str, default=None
+        Path of the Python environment, '/path/to/ENV/' if Python is in /path/to/ENV/bin/python.
+        Examples '~/miniconda3/envs/dev/', 'miniconda3/envs/dev', '~/miniconda3'.
+        Defaults to the environment that is sourced in `.bashrc` or `.bash_profile`.
 
     Attributes
     ----------
@@ -57,7 +64,8 @@ class Client(ipyparallel.Client):
     """
 
     def __init__(self, hostname='hpc05', username=None, password=None,
-                 profile='pbs', culler=True, culler_args=None, *args, **kwargs):
+                 profile='pbs', culler=True, culler_args=None, env_path=None,
+                 *args, **kwargs):
 
         if culler_args is None:
             culler_args = ''
@@ -65,7 +73,7 @@ class Client(ipyparallel.Client):
         if on_hostname(hostname):
             # Don't connect over ssh if this is run on the hpc05.
             if culler:
-                cmd = get_culler_cmd(profile, culler_args=culler_args)
+                cmd = get_culler_cmd(profile, env_path, culler_args=culler_args)
                 subprocess.Popen(cmd, shell=True,
                                  stdout=open('/dev/null', 'w'),
                                  stderr=open('logfile.log', 'a'))
@@ -123,7 +131,7 @@ class Client(ipyparallel.Client):
                                         timeout=6)
 
             if culler:
-                cmd = get_culler_cmd(profile, culler_args=culler_args)
+                cmd = get_culler_cmd(profile, env_path, culler_args=culler_args)
                 ssh.exec_command(cmd, get_pty=True)
 
             super(Client, self).__init__(self.json_filename, *args, **kwargs)

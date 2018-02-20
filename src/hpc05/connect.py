@@ -94,7 +94,7 @@ def start_remote_ipcluster(n, profile='pbs', hostname='hpc05',
         wait_for_succesful_start(stdout, decode=False, timeout=timeout)
 
 
-def connect_ipcluster(n, profile='pbs', folder=None, timeout=60):
+def connect_ipcluster(n, profile='pbs', folder=None, env_path=None, timeout=60):
     """Connect to a local ipcluster. Run this on the PBS headnode.
 
     Parameters
@@ -117,7 +117,7 @@ def connect_ipcluster(n, profile='pbs', folder=None, timeout=60):
     lview : ipyparallel.client.view.LoadBalancedView
         LoadedBalancedView, equivalent to `client.load_balanced_view()`.
     """
-    client = Client(profile=profile, timeout=timeout)
+    client = Client(profile=profile, env_path=env_path, timeout=timeout)
     print("Connected to hpc05")
     print(f'Initially connected to {len(client)} engines.')
     time.sleep(2)
@@ -189,7 +189,7 @@ def start_and_connect(n, profile='pbs', folder=None,
         print('Killed old intances of ipcluster.')
 
     start_ipcluster(n, profile, env_path, timeout)
-    return connect_ipcluster(n, profile, folder, timeout)
+    return connect_ipcluster(n, profile, folder, env_path, timeout)
 
 
 def start_remote_and_connect(n, profile='pbs', folder=None, hostname='hpc05',
@@ -237,7 +237,7 @@ def start_remote_and_connect(n, profile='pbs', folder=None, hostname='hpc05',
     start_remote_ipcluster(n, profile, hostname, username,
                            password, env_path, timeout)
     time.sleep(2)
-    return connect_ipcluster(n, profile, folder, timeout)
+    return connect_ipcluster(n, profile, folder, env_path, timeout)
 
 
 def kill_ipcluster():
