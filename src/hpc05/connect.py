@@ -47,6 +47,8 @@ def start_ipcluster(n, profile, env_path=None, timeout=60):
         Path of the Python environment, '/path/to/ENV/' if Python is in /path/to/ENV/bin/python.
         Examples '~/miniconda3/envs/dev/', 'miniconda3/envs/dev', '~/miniconda3'.
         Defaults to the environment that is sourced in `.bashrc` or `.bash_profile`.
+    timeout : int
+        Time limit after which the connection attempt is cancelled.
     """
     log_file_pattern = os.path.expanduser(f'~/.ipython/profile_{profile}/log/ipcluster-*.log')
     for f in glob.glob(log_file_pattern):
@@ -93,6 +95,28 @@ def start_remote_ipcluster(n, profile='pbs', hostname='hpc05',
 
 
 def connect_ipcluster(n, profile='pbs', folder=None, timeout=60):
+    """Connect to a local ipcluster. Run this on the PBS headnode.
+
+    Parameters
+    ----------
+    n : int
+        Number of engines to be started.
+    profile : str, default 'pbs'
+        Profile name of IPython profile.
+    folder : str, optional
+        Folder that is added to the path of the engines, e.g. "~/Work/my_current_project".
+    timeout : int
+        Time for which we try to connect to get all the engines.
+
+    Returns
+    -------
+    client : ipython.Client object
+        An IPyparallel client.
+    dview : ipyparallel.client.view.DirectView object
+        Direct view, equivalent to `client[:]`.
+    lview : ipyparallel.client.view.LoadBalancedView
+        LoadedBalancedView, equivalent to `client.load_balanced_view()`.
+    """
     client = Client(profile=profile, timeout=timeout)
     print("Connected to hpc05")
     print(f'Initially connected to {len(client)} engines.')
@@ -132,8 +156,7 @@ def connect_ipcluster(n, profile='pbs', folder=None, timeout=60):
 
 def start_and_connect(n, profile='pbs', folder=None,
                       del_old_ipcluster=True, env_path=None, timeout=60):
-    """
-    Start a ipcluster locally and connect to it. Run this on the PBS headnode.
+    """Start a ipcluster locally and connect to it. Run this on the PBS headnode.
 
     Parameters
     ----------
