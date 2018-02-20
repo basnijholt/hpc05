@@ -34,7 +34,20 @@ def wait_for_succesful_start(stdout, decode, timeout=60):
         time.sleep(0.01)
 
 
-def start_ipcluster(n, profile, timeout=60):
+def start_ipcluster(n, profile, env_path=None, timeout=60):
+    """Start an ipcluster.
+
+    Parameters
+    ----------
+    n : int
+        Number of engines to be started.
+    profile : str
+        Profile name of IPython profile.
+    env_path : str, default=None
+        Path of the Python environment, '/path/to/ENV/' if Python is in /path/to/ENV/bin/python.
+        Examples '~/miniconda3/envs/dev/', 'miniconda3/envs/dev', '~/miniconda3'.
+        Defaults to the environment that is sourced in `.bashrc` or `.bash_profile`.
+    """
     log_file_pattern = os.path.expanduser(f'~/.ipython/profile_{profile}/log/ipcluster-*.log')
     for f in glob.glob(log_file_pattern):
         # Remove old log files.
@@ -45,8 +58,12 @@ def start_ipcluster(n, profile, timeout=60):
         # Remove old pid files.
         os.remove(f)
 
+    ipcluster = 'ipcluster'
+    if env_path:
+        ipcluster = os.path.join(os.path.expanduser(env_path), 'bin', ipcluster)
+
     print(f'Launching {n} engines in a ipcluster.')
-    cmd = f'ipcluster start --profile={profile} --n={n} --log-to-file --daemon &'
+    cmd = f'{ipcluster} start --profile={profile} --n={n} --log-to-file --daemon &'
 
     # For an unknown reason `subprocess.Popen(cmd.split())` doesn't work when
     # running `start_remote_ipcluster` and connecting to it, so we use os.system.
@@ -66,9 +83,10 @@ def start_ipcluster(n, profile, timeout=60):
 
 
 def start_remote_ipcluster(n, profile='pbs', hostname='hpc05',
-                           username=None, password=None, timeout=60):
+                           username=None, password=None, env_path=None, 
+                           timeout=60):
     with setup_ssh(hostname, username, password) as ssh:
-        cmd = f"import hpc05; hpc05.start_ipcluster({n}, '{profile}')"
+        cmd = f"import hpc05; hpc05.start_ipcluster({n}, '{profile}', '{env_path}', '{timeout}')"
         cmd = f'python -c "{cmd}"'
         stdin, stdout, stderr = ssh.exec_command(cmd, get_pty=True)
         wait_for_succesful_start(stdout, decode=False, timeout=timeout)
@@ -113,23 +131,88 @@ def connect_ipcluster(n, profile='pbs', folder=None, timeout=60):
 
 
 def start_and_connect(n, profile='pbs', folder=None,
-                      del_old_ipcluster=True, timeout=60):
+                      del_old_ipcluster=True, env_path=None, timeout=60):
+    """
+    Start a ipcluster locally and connect to it. Run this on the PBS headnode.
+
+    Parameters
+    ----------
+    n : int
+        Number of engines to be started.
+    profile : str, default 'pbs'
+        Profile name of IPython profile.
+    folder : str, optional
+        Folder that is added to the path of the engines, e.g. "~/Work/my_current_project".
+    del_old_ipcluster : bool
+        If True, it cleansup any old instances of `ipcluster` and kills your jobs in qstat.
+    env_path : str, default None
+        Path of the Python environment, '/path/to/ENV/' if Python is in /path/to/ENV/bin/python.
+        Examples '~/miniconda3/envs/dev/', 'miniconda3/envs/dev', '~/miniconda3'.
+        Defaults to the environment that is sourced in `.bashrc` or `.bash_profile`.
+    timeout : int
+        Time for which we try to connect to get all the engines.
+
+    Returns
+    -------
+    client : ipython.Client object
+        An IPyparallel client.
+    dview : ipyparallel.client.view.DirectView object
+        Direct view, equivalent to `client[:]`.
+    lview : ipyparallel.client.view.LoadBalancedView
+        LoadedBalancedView, equivalent to `client.load_balanced_view()`.
+    """
     if del_old_ipcluster:
         kill_ipcluster()
         print('Killed old intances of ipcluster.')
 
-    start_ipcluster(n, profile)
+    start_ipcluster(n, profile, env_path, timeout)
     return connect_ipcluster(n, profile, folder, timeout)
 
 
 def start_remote_and_connect(n, profile='pbs', folder=None, hostname='hpc05',
                              username=None, password=None,
-                             del_old_ipcluster=True, timeout=60):
+                             del_old_ipcluster=True, env_path=None, timeout=60):
+    """Start a remote ipcluster and connect to it.
+
+    Parameters
+    ----------
+    n : int
+        Number of engines to be started.
+    profile : str, default 'pbs'
+        Profile name of IPython profile.
+    folder : str, optional
+        Folder that is added to the path of the engines, e.g. "~/Work/my_current_project".
+    hostname : str, optional, default 'hpc05'
+        Hostname of PBS cluster headnode.
+    username : str
+        Username to log into `hostname`. If not provided, it tries to look it up in
+        your `.ssh/config`.
+    password : str
+        Password for `ssh username@hostname`.
+    del_old_ipcluster : bool
+        If True, it cleansup any old instances of `ipcluster` and kills your jobs in qstat.
+    env_path : str, default None
+        Path of the Python environment, '/path/to/ENV/' if Python is in /path/to/ENV/bin/python.
+        Examples '~/miniconda3/envs/dev/', 'miniconda3/envs/dev', '~/miniconda3'.
+        Defaults to the environment that is sourced in `.bashrc` or `.bash_profile`.
+    timeout : int
+        Time for which we try to connect to get all the engines.
+
+    Returns
+    -------
+    client : ipython.Client object
+        An IPyparallel client.
+    dview : ipyparallel.client.view.DirectView object
+        Direct view, equivalent to `client[:]`.
+    lview : ipyparallel.client.view.LoadBalancedView
+        LoadedBalancedView, equivalent to `client.load_balanced_view()`.
+    """
     if del_old_ipcluster:
         kill_remote_ipcluster(hostname, username, password)
         print('Killed old intances of ipcluster.')
 
-    start_remote_ipcluster(n, profile, hostname, username, password)
+    start_remote_ipcluster(n, profile, hostname, username,
+                           password, env_path, timeout)
     time.sleep(2)
     return connect_ipcluster(n, profile, folder, timeout)
 
