@@ -97,7 +97,8 @@ def start_remote_ipcluster(n, profile='pbs', hostname='hpc05',
         wait_for_succesful_start(stdout, decode=False, timeout=timeout)
 
 
-def connect_ipcluster(n, profile='pbs', folder=None, env_path=None, timeout=60):
+def connect_ipcluster(n, profile='pbs', folder=None, env_path=None,
+                      timeout=60, hostname='hpc05'):
     """Connect to a local ipcluster. Run this on the PBS headnode.
 
     Parameters
@@ -120,7 +121,8 @@ def connect_ipcluster(n, profile='pbs', folder=None, env_path=None, timeout=60):
     lview : ipyparallel.client.view.LoadBalancedView
         LoadedBalancedView, equivalent to `client.load_balanced_view()`.
     """
-    client = Client(profile=profile, env_path=env_path, timeout=timeout)
+    client = Client(profile=profile, env_path=env_path,
+                    timeout=timeout, hostname=hostname)
     print("Connected to hpc05")
     print(f'Initially connected to {len(client)} engines.')
     time.sleep(2)
@@ -158,7 +160,8 @@ def connect_ipcluster(n, profile='pbs', folder=None, env_path=None, timeout=60):
 
 
 def start_and_connect(n, profile='pbs', folder=None,
-                      del_old_ipcluster=True, env_path=None, timeout=60):
+                      del_old_ipcluster=True, env_path=None, timeout=60,
+                      hostname='hpc05'):
     """Start a ipcluster locally and connect to it. Run this on the PBS headnode.
 
     Parameters
@@ -192,7 +195,7 @@ def start_and_connect(n, profile='pbs', folder=None,
         print('Killed old intances of ipcluster.')
 
     start_ipcluster(n, profile, env_path, timeout)
-    return connect_ipcluster(n, profile, folder, env_path, timeout)
+    return connect_ipcluster(n, profile, folder, env_path, timeout, hostname)
 
 
 def start_remote_and_connect(n, profile='pbs', folder=None, hostname='hpc05',
