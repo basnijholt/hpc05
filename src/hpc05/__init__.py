@@ -6,6 +6,8 @@ __all__ = []
 available = [('client', ['Client']),
              ('pbs_profile', ['create_pbs_profile',
                               'create_remote_pbs_profile']),
+             ('slurm_profile', ['create_slurm_profile',
+                              'create_remote_slurm_profile']),
              ('utils', ['check_difference_in_envs']),
              ('connect', ['start_ipcluster',
                           'start_remote_ipcluster',

@@ -3,6 +3,7 @@ import os
 import shutil
 import subprocess
 import sys
+import textwrap
 
 # Third party imports
 from IPython.paths import locate_profile
@@ -32,10 +33,19 @@ def create_slurm_profile(profile='slurm', local_controller=False):
         shutil.rmtree(os.path.expanduser(f'~/.ipython/profile_{profile}'))
     except:
         pass
-
     create_parallel_profile(profile)
 
-    ipcluster = ["c.IPClusterEngines.engine_launcher_class = 'SlurmEngineSetLauncher'"]
+    template = textwrap.dedent("""\
+        #!/bin/sh
+        #SBATCH --ntasks={n}
+        #SBATCH --mem-per-cpu=4G
+        #SBATCH --job-name=ipy-engine-
+        srun ipengine --profile-dir='{profile_dir}' --cluster-id=''
+        """)
+
+    ipcluster = ["c.IPClusterEngines.engine_launcher_class = 'SlurmEngineSetLauncher'",
+                 f'c.SlurmEngineSetLauncher.batch_template = """{template}"""']
+    
     if not local_controller:
         ipcluster.append("c.IPClusterStart.controller_launcher_class = 'SlurmControllerLauncher'")
 
@@ -43,7 +53,8 @@ def create_slurm_profile(profile='slurm', local_controller=False):
          'ipcontroller_config.py': ["c.HubFactory.ip = u'*'",
                                     "c.HubFactory.registration_timeout = 600"],
          'ipengine_config.py': ["c.IPEngineApp.wait_for_url_file = 300",
-                                "c.EngineFactory.timeout = 300"]}
+                                "c.EngineFactory.timeout = 300",
+                                "c.IPEngineApp.startup_command = 'import os, sys'"]}
 
     for fname, line in f.items():
         fname = os.path.join(locate_profile(profile), fname)

@@ -71,6 +71,7 @@ class Client(ipyparallel.Client):
             culler_args = ''
 
         if on_hostname(hostname):
+            print('on hostname')
             # Don't connect over ssh if this is run on the hpc05.
             if culler:
                 cmd = get_culler_cmd(profile, env_path, culler_args=culler_args)
