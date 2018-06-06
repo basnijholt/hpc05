@@ -263,13 +263,17 @@ def kill_ipcluster():
     }
     ```
     """
-    clean_up_cmds = ["qselect -u $USER | xargs qdel",
-                     "rm -f *.hpc05.hpc* ipengine* ipcontroller* pbs_*",
-                     "pkill -f hpc05_culler",
-                     "pkill -f ipcluster",
-                     "pkill -f ipengine",
-                     "pkill -f ipyparallel.controller",
-                     "pkill -f ipyparallel.engines"]
+    clean_up_cmds = [
+        "qselect -u $USER | xargs qdel",
+         "rm -f *.hpc05.hpc* ipengine* ipcontroller* pbs_*",
+         "pkill -f hpc05_culler",
+         "pkill -f ipcluster",
+         "pkill -f ipengine",
+         "pkill -f ipyparallel.controller",
+         "pkill -f ipyparallel.engines",
+         "scancel --name='ipy-engine-' --user=$USER",
+         "scancel --name='ipy-controller-' --user=$USER",
+    ]
 
     clean_up_cmds = [cmd + ' 2> /dev/null' for cmd in clean_up_cmds]
 
