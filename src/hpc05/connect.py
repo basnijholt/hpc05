@@ -98,7 +98,7 @@ def start_remote_ipcluster(n, profile='pbs', hostname='hpc05',
 
 
 def connect_ipcluster(n, profile='pbs', folder=None, env_path=None,
-                      timeout=60, hostname='hpc05'):
+                      timeout=60, hostname='hpc05', client_kwargs=None):
     """Connect to a local ipcluster. Run this on the PBS headnode.
 
     Parameters
@@ -111,6 +111,11 @@ def connect_ipcluster(n, profile='pbs', folder=None, env_path=None,
         Folder that is added to the path of the engines, e.g. "~/Work/my_current_project".
     timeout : int
         Time for which we try to connect to get all the engines.
+    hostname : str
+        Hostname of machine where the ipcluster runs. If connecting
+        via the headnode use: `socket.gethostname()`.
+    client_kwargs : dict
+        Keyword arguments that are passed to `ipyparallel.Client()`.
 
     Returns
     -------
@@ -121,8 +126,10 @@ def connect_ipcluster(n, profile='pbs', folder=None, env_path=None,
     lview : ipyparallel.client.view.LoadBalancedView
         LoadedBalancedView, equivalent to `client.load_balanced_view()`.
     """
+    if client_kwargs is None:
+        client_kwargs = {}
     client = Client(profile=profile, env_path=env_path,
-                    timeout=timeout, hostname=hostname)
+                    timeout=timeout, hostname=hostname, **client_kwargs)
     print("Connected to hpc05")
     print(f'Initially connected to {len(client)} engines.')
     time.sleep(2)
@@ -154,14 +161,15 @@ def connect_ipcluster(n, profile='pbs', folder=None, env_path=None,
 
     if folder is not None:
         print(f'Adding {folder} to path.')
-        get_ipython().magic(f"px import sys, os; sys.path.append(os.path.expanduser('{folder}'))")
+        cmd = f"import sys, os; sys.path.append(os.path.expanduser('{folder}'))"
+        dview.execute(cmd).result()
 
     return client, dview, lview
 
 
 def start_and_connect(n, profile='pbs', folder=None,
                       del_old_ipcluster=True, env_path=None, timeout=60,
-                      hostname='hpc05'):
+                      hostname='hpc05', client_kwargs=None):
     """Start a ipcluster locally and connect to it. Run this on the PBS headnode.
 
     Parameters
@@ -180,6 +188,11 @@ def start_and_connect(n, profile='pbs', folder=None,
         Defaults to the environment that is sourced in `.bashrc` or `.bash_profile`.
     timeout : int
         Time for which we try to connect to get all the engines.
+    hostname : str
+        Hostname of machine where the ipcluster runs. If connecting
+        via the headnode use: `socket.gethostname()`.
+    client_kwargs : dict
+        Keyword arguments that are passed to `ipyparallel.Client()`.
 
     Returns
     -------
@@ -195,12 +208,14 @@ def start_and_connect(n, profile='pbs', folder=None,
         print('Killed old intances of ipcluster.')
 
     start_ipcluster(n, profile, env_path, timeout)
-    return connect_ipcluster(n, profile, folder, env_path, timeout, hostname)
+    return connect_ipcluster(n, profile, folder, env_path, timeout,
+                             hostname, client_kwargs)
 
 
 def start_remote_and_connect(n, profile='pbs', folder=None, hostname='hpc05',
                              username=None, password=None,
-                             del_old_ipcluster=True, env_path=None, timeout=60):
+                             del_old_ipcluster=True, env_path=None, timeout=60,
+                             client_kwargs=None):
     """Start a remote ipcluster and connect to it.
 
     Parameters
@@ -226,6 +241,8 @@ def start_remote_and_connect(n, profile='pbs', folder=None, hostname='hpc05',
         Defaults to the environment that is sourced in `.bashrc` or `.bash_profile`.
     timeout : int
         Time for which we try to connect to get all the engines.
+    client_kwargs : dict
+        Keyword arguments that are passed to `ipyparallel.Client()`.
 
     Returns
     -------
@@ -243,7 +260,8 @@ def start_remote_and_connect(n, profile='pbs', folder=None, hostname='hpc05',
     start_remote_ipcluster(n, profile, hostname, username,
                            password, env_path, timeout)
     time.sleep(2)
-    return connect_ipcluster(n, profile, folder, env_path, timeout)
+    return connect_ipcluster(n, profile, folder, env_path, timeout,
+                             client_kwargs=client_kwargs)
 
 
 def kill_ipcluster():
