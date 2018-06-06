@@ -33,6 +33,7 @@ class EngineCuller(object):
         self.max_active = 0
         self.active_now = 0
         self.num_times_zero = 0
+        self.started_at = datetime.utcnow()
 
     def update_state(self):
         """Check engine status and cull any engines that have become idle.
@@ -74,6 +75,11 @@ class EngineCuller(object):
             self.client.shutdown(hub=True)
             sys.exit()
         self.max_active = max(self.max_active, self.active_now)
+
+        if datetime.utcnow() - self.started_at > 86400 * 30:
+            # Kill this script if it is still running after 
+            # 30 days (for some unknown reason.)
+            sys.exit(1)
 
     def cull_idle(self):
         """Cull any engines that have become idle for too long."""
