@@ -28,20 +28,33 @@ def create_parallel_profile(profile):
     subprocess.check_call(cmd)
 
 
-def create_slurm_profile(profile='slurm', local_controller=False):
+def create_slurm_profile(profile='slurm', local_controller=False, custom_template=None):
+    """Creata a slurm profile.
+
+    Custom template example:
+
+    custom_template = '''\
+        #!/bin/sh
+        #SBATCH --ntasks={n}
+        #SBATCH --mem-per-cpu=4G
+        #SBATCH --job-name=ipy-engine-
+        srun ipengine --profile-dir='{profile_dir}' --cluster-id=''
+    '''
+    """
     try:
         shutil.rmtree(os.path.expanduser(f'~/.ipython/profile_{profile}'))
     except:
         pass
     create_parallel_profile(profile)
 
-    template = textwrap.dedent("""\
+    default_template = """\
         #!/bin/sh
         #SBATCH --ntasks={n}
         #SBATCH --mem-per-cpu=4G
         #SBATCH --job-name=ipy-engine-
         srun ipengine --profile-dir='{profile_dir}' --cluster-id=''
-        """)
+    """
+    template = textwrap.dedent(custom_template or default_template)
 
     ipcluster = ["c.IPClusterEngines.engine_launcher_class = 'SlurmEngineSetLauncher'",
                  f'c.SlurmEngineSetLauncher.batch_template = """{template}"""']
