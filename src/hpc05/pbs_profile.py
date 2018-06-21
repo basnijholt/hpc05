@@ -29,7 +29,8 @@ def create_parallel_profile(profile):
 
 def create_pbs_profile(profile='pbs', local_controller=False):
     with contextlib.suppress(FileNotFoundError):
-        shutil.rmtree(os.path.expanduser(f'~/.ipython/profile_{profile}'))
+        path = os.path.expanduser(f'~/.ipython/profile_{profile}')
+        shutil.rmtree(path, ignore_errors=True)
 
     create_parallel_profile(profile)
 
