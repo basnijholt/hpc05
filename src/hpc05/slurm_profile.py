@@ -1,4 +1,5 @@
 # Standard library imports
+import contextlib
 import os
 import shutil
 import subprocess
@@ -41,10 +42,8 @@ def create_slurm_profile(profile='slurm', local_controller=False, custom_templat
         srun ipengine --profile-dir='{profile_dir}' --cluster-id=''
     '''
     """
-    try:
+    with contextlib.suppress(FileNotFoundError):
         shutil.rmtree(os.path.expanduser(f'~/.ipython/profile_{profile}'))
-    except:
-        pass
     create_parallel_profile(profile)
 
     default_template = """\
@@ -76,8 +75,11 @@ def create_slurm_profile(profile='slurm', local_controller=False, custom_templat
     print(f'Succesfully created a new {profile} profile.')
 
 
-def create_remote_slurm_profile(hostname='hpc05', username=None,
-                              password=None, profile="slurm", local_controller=False):
+def create_remote_slurm_profile(hostname='hpc05', username=None, password=None,
+                                profile="slurm", local_controller=False,
+                                custom_template=None):
+    if custom_template is not None:
+        raise NotImplementedError('Use `create_slurm_profile` locally or implement this.')
     with setup_ssh(hostname, username, password) as ssh:
         cmd = f'import hpc05; hpc05.slurm_profile.create_slurm_profile("{profile}", {local_controller})'
         cmd = f"python -c '{cmd}'"
