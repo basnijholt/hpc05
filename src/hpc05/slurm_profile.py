@@ -53,7 +53,7 @@ def create_slurm_profile(profile='slurm', local_controller=False, custom_templat
         #SBATCH --mem-per-cpu=4G
         #SBATCH --job-name=ipy-engine-
         srun ipengine --profile-dir='{profile_dir}' --cluster-id=''
-    """
+        """
     template = textwrap.dedent(custom_template or default_template)
 
     ipcluster = ["c.IPClusterEngines.engine_launcher_class = 'SlurmEngineSetLauncher'",
