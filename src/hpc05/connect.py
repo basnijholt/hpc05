@@ -204,7 +204,7 @@ def start_and_connect(n, profile='pbs', folder=None,
         LoadedBalancedView, equivalent to `client.load_balanced_view()`.
     """
     if del_old_ipcluster:
-        kill_ipcluster()
+        kill_ipcluster(profile)
         print('Killed old intances of ipcluster.')
 
     start_ipcluster(n, profile, env_path, timeout)
@@ -264,7 +264,7 @@ def start_remote_and_connect(n, profile='pbs', folder=None, hostname='hpc05',
                              client_kwargs=client_kwargs)
 
 
-def kill_ipcluster():
+def kill_ipcluster(name=None):
     """Kill your ipcluster and cleanup the files.
 
     This should do the same as the following bash function (recommended:
@@ -292,6 +292,9 @@ def kill_ipcluster():
          "scancel --name='ipy-engine-' --user=$USER",
          "scancel --name='ipy-controller-' --user=$USER",
     ]
+
+    if name is not None:
+        clean_up_cmds.append(f"scancel --name='{name}' --user=$USER")
 
     clean_up_cmds = [cmd + ' 2> /dev/null' for cmd in clean_up_cmds]
 
