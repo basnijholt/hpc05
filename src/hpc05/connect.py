@@ -130,7 +130,7 @@ def connect_ipcluster(n, profile='pbs', folder=None, env_path=None,
         client_kwargs = {}
     client = Client(profile=profile, env_path=env_path,
                     timeout=timeout, hostname=hostname, **client_kwargs)
-    print("Connected to hpc05")
+    print("Connected to the `ipcluster`")
     print(f'Initially connected to {len(client)} engines.')
     time.sleep(2)
     try:
