@@ -76,7 +76,7 @@ class EngineCuller(object):
             sys.exit()
         self.max_active = max(self.max_active, self.active_now)
 
-        if datetime.utcnow() - self.started_at > 86400 * 30:
+        if (datetime.utcnow() - self.started_at).seconds > 86400 * 30:
             # Kill this script if it is still running after 
             # 30 days (for some unknown reason.)
             sys.exit(1)
