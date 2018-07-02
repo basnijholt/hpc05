@@ -64,7 +64,8 @@ def create_slurm_profile(profile='slurm', local_controller=False, custom_templat
 
     f = {'ipcluster_config.py': ipcluster,
          'ipcontroller_config.py': ["c.HubFactory.ip = u'*'",
-                                    "c.HubFactory.registration_timeout = 600"],
+                                    "c.HubFactory.registration_timeout = 600",
+                                    "c.HeartMonitor.period = 90000"],
          'ipengine_config.py': ["c.IPEngineApp.wait_for_url_file = 300",
                                 "c.EngineFactory.timeout = 300",
                                 "c.IPEngineApp.startup_command = 'import os, sys'"]}
