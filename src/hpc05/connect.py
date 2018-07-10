@@ -1,3 +1,4 @@
+from contextlib import suppress
 import glob
 import os.path
 import subprocess
@@ -71,11 +72,16 @@ def start_ipcluster(n, profile, env_path=None, timeout=60):
     # running `start_remote_ipcluster` and connecting to it, so we use os.system.
     os.system(cmd)
 
-    time.sleep(5)  # We wait a bit since we need the log file to exit
+    for i in range(10):
+        print('Waiting for the log-file.')
+        time.sleep(5)  # We wait a bit since we need the log file to exist
 
-    # We don't PIPE stdout of the process above because we need a detached
-    # process so we tail the log file.
-    log_file = glob.glob(log_file_pattern)[0]
+        # We don't PIPE stdout of the process above because we need a detached
+        # process so we tail the log file.
+        with suppress(IndexError):
+            log_file = glob.glob(log_file_pattern)[0]
+            break
+
     cmd = f'tail -F {log_file}'
     proc = subprocess.Popen(cmd.split(),
                             stdout=subprocess.PIPE,
