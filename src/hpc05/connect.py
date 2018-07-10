@@ -139,21 +139,17 @@ def connect_ipcluster(n, profile='pbs', folder=None, env_path=None,
     print("Connected to the `ipcluster`")
     print(f'Initially connected to {len(client)} engines.')
     time.sleep(2)
-    try:
-        dview = client[:]
-    except NoEnginesRegistered:
+    with suppress(NoEnginesRegistered):
         # This can happen, we just need to wait a little longer.
-        pass
+        dview = client[:]
 
     t_start = time.time()
     done = len(client) == n
     while not done:
         done = len(client) == n
-        try:
-            dview = client[:]
-        except NoEnginesRegistered:
+        with suppress(NoEnginesRegistered):
             # This can happen, we just need to wait a little longer.
-            pass
+            dview = client[:]
         t_diff = int(time.time() - t_start)
         if t_diff % 10 == 0:
             print(f'Connected to {len(client)} engines after {int(t_diff)} seconds')
@@ -330,9 +326,7 @@ def kill_remote_ipcluster(hostname='hpc05', username=None, password=None):
         cmd = f"import hpc05; hpc05.connect.kill_ipcluster()"
         cmd = f'python -c "{cmd}"'
         stdin, stdout, stderr = ssh.exec_command(cmd, get_pty=True)
-        try:
+        with suppress(Exception):
             lines = stdout.readlines()
             for line in lines:
                 print(line)
-        except:
-            pass
