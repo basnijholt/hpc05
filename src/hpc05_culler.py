@@ -8,6 +8,7 @@ shutdown.
 # Distributed under the terms of the Modified BSD License
 
 from collections import defaultdict
+from contextlib import suppress
 from datetime import datetime
 import psutil
 import os
@@ -18,6 +19,7 @@ from tornado.log import app_log
 from ipyparallel import Client
 
 start_time = datetime.utcnow()
+
 
 class EngineCuller(object):
     """An object for culling idle IPython parallel engines."""
@@ -71,13 +73,13 @@ class EngineCuller(object):
         app_log.debug(print_string.format(running_time, self.active_now, last_active, self.max_active))
         if (len(self.activity) == 0 and
             self.active_now < self.max_active and
-            last_active == self.active_now or self.num_times_zero > 10):
+                last_active == self.active_now or self.num_times_zero > 10):
             self.client.shutdown(hub=True)
             sys.exit()
         self.max_active = max(self.max_active, self.active_now)
 
         if (datetime.utcnow() - self.started_at).seconds > 86400 * 30:
-            # Kill this script if it is still running after 
+            # Kill this script if it is still running after
             # 30 days (for some unknown reason.)
             sys.exit(1)
 
@@ -106,24 +108,20 @@ def kill_running_cullers(profile):
     username = os.environ.get('USER', 'username')
     culler_procs = []
     for proc in psutil.process_iter():
-        try:
+        with suppress(Exception):
             cmd = ' '.join(proc.cmdline())
             is_culler = 'hpc05_culler' in cmd and profile in cmd
             if is_culler and proc.username() == username:
                 # make sure to append only the procs of the user!
                 culler_procs.append(proc)
-        except:
-            pass
 
     culler_procs = sorted(culler_procs, key=lambda proc: proc.create_time())
 
     if len(culler_procs) > 1:
         # Only kill if there is more than 1 proc and don't kill the last one.
         for proc in culler_procs[:-1]:
-            try:
+            with suppress(Exception):
                 proc.kill()
-            except:
-                pass
 
 
 def main():
@@ -146,6 +144,7 @@ def main():
     ioloop.PeriodicCallback(
         culler.update_state, options.options.interval * 1000).start()
     loop.start()
+
 
 if __name__ == '__main__':
     print('Running')
