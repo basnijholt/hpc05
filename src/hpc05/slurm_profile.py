@@ -29,7 +29,7 @@ def _create_parallel_profile(profile):
     subprocess.check_call(cmd)
 
 
-def create_slurm_profile(profile='slurm', local_controller=False, custom_template=None):
+def create_local_slurm_profile(profile='slurm', local_controller=False, custom_template=None):
     """Creata a slurm profile for ipyparallel.
 
     Parameters
@@ -55,7 +55,7 @@ def create_slurm_profile(profile='slurm', local_controller=False, custom_templat
         #SBATCH --job-name=ipy-engine-
         srun ipengine --profile-dir='{profile_dir}' --cluster-id=''
     '''
-    hpc05.create_pbs_profile('pbs', False, custom_template)
+    hpc05.create_local_pbs_profile('pbs', False, custom_template)
     ```
     """
     with contextlib.suppress(FileNotFoundError):
@@ -96,9 +96,9 @@ def create_remote_slurm_profile(hostname='hpc05', username=None, password=None,
                                 profile="slurm", local_controller=False,
                                 custom_template=None):
     if custom_template is not None:
-        raise NotImplementedError('Use `create_slurm_profile` locally or implement this.')
+        raise NotImplementedError('Use `create_local_slurm_profile` locally or implement this.')
     with setup_ssh(hostname, username, password) as ssh:
-        cmd = f'import hpc05; hpc05.slurm_profile.create_slurm_profile("{profile}", {local_controller})'
+        cmd = f'import hpc05; hpc05.slurm_profile.create_local_slurm_profile("{profile}", {local_controller})'
         cmd = f"python -c '{cmd}'"
         stdin, stdout, stderr = ssh.exec_command(cmd, get_pty=True)
         out, err = stdout.readlines(), stderr.readlines()

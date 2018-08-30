@@ -29,7 +29,7 @@ def _create_parallel_profile(profile):
     subprocess.check_call(cmd)
 
 
-def create_pbs_profile(profile='pbs', local_controller=False, custom_template=None):
+def create_local_pbs_profile(profile='pbs', local_controller=False, custom_template=None):
     """Creata a PBS profile for ipyparallel.
 
     Parameters
@@ -56,7 +56,7 @@ def create_pbs_profile(profile='pbs', local_controller=False, custom_template=No
         #PBS -l mem=4GB
         python -m ipyparallel.engine --profile-dir="{profile_dir}" --cluster-id=""
     '''
-    hpc05.create_pbs_profile('pbs', False, custom_template)
+    hpc05.create_local_pbs_profile('pbs', False, custom_template)
     ```
     """
     with contextlib.suppress(FileNotFoundError):
@@ -99,9 +99,9 @@ def create_remote_pbs_profile(hostname='hpc05', username=None,
                               password=None, profile="pbs", local_controller=False,
                               custom_template=None):
     if custom_template is not None:
-        raise NotImplementedError('Use `create_pbs_profile` locally or implement this.')
+        raise NotImplementedError('Use `create_local_pbs_profile` locally or implement this.')
     with setup_ssh(hostname, username, password) as ssh:
-        cmd = f'import hpc05; hpc05.create_pbs_profile("{profile}", {local_controller})'
+        cmd = f'import hpc05; hpc05.create_local_pbs_profile("{profile}", {local_controller})'
         cmd = f"python -c '{cmd}'"
         stdin, stdout, stderr = ssh.exec_command(cmd, get_pty=True)
         out, err = stdout.readlines(), stderr.readlines()
