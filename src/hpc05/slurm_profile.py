@@ -23,17 +23,30 @@ def line_prepender(filename, line):
         f.write(line + '\n' + content)
 
 
-def create_parallel_profile(profile):
+def _create_parallel_profile(profile):
     cmd = [sys.executable, "-E", "-c", "from IPython import start_ipython; start_ipython()",
            "profile", "create", profile, "--parallel"]
     subprocess.check_call(cmd)
 
 
 def create_slurm_profile(profile='slurm', local_controller=False, custom_template=None):
-    """Creata a slurm profile.
+    """Creata a slurm profile for ipyparallel.
 
-    Custom template example:
+    Parameters
+    ----------
+    profile : str
+        Profile name.
+    local_controller : bool
+        Create a ipcontroller on a seperate node if True and locally if False.
+    custom_template : str
+        A custom job script template, see the example below.
 
+    Examples
+    --------
+    By default no memory is specified, using the following `custom_template`
+    allows you to request a certain amount of memory.
+
+    ```python
     custom_template = '''\
         #!/bin/sh
         #SBATCH --ntasks={n}
@@ -41,16 +54,16 @@ def create_slurm_profile(profile='slurm', local_controller=False, custom_templat
         #SBATCH --job-name=ipy-engine-
         srun ipengine --profile-dir='{profile_dir}' --cluster-id=''
     '''
+    ```
     """
     with contextlib.suppress(FileNotFoundError):
         path = os.path.expanduser(f'~/.ipython/profile_{profile}')
         shutil.rmtree(path, ignore_errors=True)
-    create_parallel_profile(profile)
+    _create_parallel_profile(profile)
 
     default_template = """\
         #!/bin/sh
         #SBATCH --ntasks={n}
-        #SBATCH --mem-per-cpu=4G
         #SBATCH --job-name=ipy-engine-
         srun ipengine --profile-dir='{profile_dir}' --cluster-id=''
         """
