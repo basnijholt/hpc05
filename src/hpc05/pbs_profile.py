@@ -48,13 +48,14 @@ def create_local_pbs_profile(profile='pbs', local_controller=False, custom_templ
 
     ```python
     import hpc05
-    custom_template = '''\
+    import sys
+    custom_template = f'''\
         #!/bin/sh
-        #PBS -t 1-{n}
+        #PBS -t 1-{{n}}
         #PBS -V
         #PBS -N ipengine
         #PBS -l mem=4GB
-        python -m ipyparallel.engine --profile-dir="{profile_dir}" --cluster-id=""
+        {sys.executable} -m ipyparallel.engine --profile-dir="{{profile_dir}}" --cluster-id=""
     '''
     hpc05.create_local_pbs_profile('pbs', False, custom_template)
     ```
@@ -65,12 +66,12 @@ def create_local_pbs_profile(profile='pbs', local_controller=False, custom_templ
 
     _create_parallel_profile(profile)
 
-    default_template = """\
+    default_template = f"""\
         #!/bin/sh
-        #PBS -t 1-{n}
+        #PBS -t 1-{{n}}
         #PBS -V
         #PBS -N ipengine
-        python -m ipyparallel.engine --profile-dir="{profile_dir}" --cluster-id=""
+        {sys.executable} -m ipyparallel.engine --profile-dir="{{profile_dir}}" --cluster-id=""
         """
     template = textwrap.dedent(custom_template or default_template)
 
@@ -86,7 +87,8 @@ def create_local_pbs_profile(profile='pbs', local_controller=False, custom_templ
                                     "c.HeartMonitor.period = 90000"],
          'ipengine_config.py': ["c.IPEngineApp.wait_for_url_file = 300",
                                 "c.EngineFactory.timeout = 300",
-                                "c.IPEngineApp.startup_command = 'import os, sys'"]}
+                                "c.IPEngineApp.startup_command = 'import os, sys'",
+                                "c.IPClusterStart.log_level = 'DEBUG'"]}
 
     for fname, line in f.items():
         fname = os.path.join(locate_profile(profile), fname)
