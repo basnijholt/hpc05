@@ -47,6 +47,7 @@ def create_slurm_profile(profile='slurm', local_controller=False, custom_templat
     allows you to request a certain amount of memory.
 
     ```python
+    import hpc05
     custom_template = '''\
         #!/bin/sh
         #SBATCH --ntasks={n}
@@ -54,6 +55,7 @@ def create_slurm_profile(profile='slurm', local_controller=False, custom_templat
         #SBATCH --job-name=ipy-engine-
         srun ipengine --profile-dir='{profile_dir}' --cluster-id=''
     '''
+    hpc05.create_pbs_profile('pbs', False, custom_template)
     ```
     """
     with contextlib.suppress(FileNotFoundError):

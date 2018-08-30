@@ -47,6 +47,7 @@ def create_pbs_profile(profile='pbs', local_controller=False, custom_template=No
     allows you to request a certain amount of memory.
 
     ```python
+    import hpc05
     custom_template = '''\
         #!/bin/sh
         #PBS -t 1-{n}
@@ -55,6 +56,7 @@ def create_pbs_profile(profile='pbs', local_controller=False, custom_template=No
         #PBS -l mem=4GB
         python -m ipyparallel.engine --profile-dir="{profile_dir}" --cluster-id=""
     '''
+    hpc05.create_pbs_profile('pbs', False, custom_template)
     ```
     """
     with contextlib.suppress(FileNotFoundError):
