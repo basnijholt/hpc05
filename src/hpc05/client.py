@@ -20,6 +20,8 @@ def get_culler_cmd(profile='pbs', env_path=None, culler_args=None):
     python = 'python'
     if env_path:
         python = os.path.join(os.path.expanduser(env_path), 'bin', python)
+    if culler_args is None:
+        culler_args = ''
     cmd = (f'nohup {python} -m hpc05_culler --logging=debug '
            f'--profile={profile} --log_file_prefix=culler.log {culler_args} &')
     return bash(cmd)
