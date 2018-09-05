@@ -25,26 +25,31 @@ def get_culler_cmd(profile='pbs', env_path=None, culler_args=None):
 
 
 class Client(ipyparallel.Client):
-    """ipyparallel Client to connect to the hpc05.
+    """ipyparallel Client to connect to an ipcluster.
 
     Parameters
     ----------
+    profile : str
+        profile name, default is 'pbs' which results in
+        the folder `~/.ipython/profile_pbs`.
     hostname : str
-        hostname, e.g. `hpc05.tudelft.net` or as in config.
+        hostname, e.g. `hpc05.tudelft.net` or as in
+        your `.ssh/config`.
     username : str
         user name at hostname
     password : str
         password for hpc05. NOT RECOMMENDED, use ssh-agent.
-    profile : str
-        profile name, default results in folder `profile_pbs`.
     culler : bool
         Controls starting of the culler. Default: True.
     culler_args : str
         Add arguments to the culler. e.g. '--timeout=200'
-    env_path : str, default=None
+    env_path : str, default: None
         Path of the Python environment, '/path/to/ENV/' if Python is in /path/to/ENV/bin/python.
         Examples '~/miniconda3/envs/dev/', 'miniconda3/envs/dev', '~/miniconda3'.
         Defaults to the environment that is sourced in `.bashrc` or `.bash_profile`.
+    local : bool, default: False
+        Connect to the client locally or over ssh. Set it False if
+        a connection over ssh is needed.
 
     Attributes
     ----------
@@ -55,21 +60,21 @@ class Client(ipyparallel.Client):
 
     Notes
     -----
-    You have to have a profile with PBS settings in your `.ipython`
+    You need a profile with PBS (or SLURM) settings in your `.ipython`
     folder on the hpc05. You can generate this by running:
         hpc05.create_remote_pbs_profile(username, hostname)
     Then setup a ipcluster on the hpc05 by starting a screen and running
         ipcluster start --n=10 --profile=pbs
     """
 
-    def __init__(self, hostname='hpc05', username=None, password=None,
-                 profile='pbs', culler=True, culler_args=None, env_path=None,
-                 *args, **kwargs):
+    def __init__(self, profile='pbs', hostname='hpc05', username=None,
+                 password=None, culler=True, culler_args=None, env_path=None,
+                 local=False, *args, **kwargs):
 
         if culler_args is None:
             culler_args = ''
 
-        if on_hostname(hostname):
+        if local or on_hostname(hostname):
             # Don't connect over ssh if this is run on hostname.
             if culler:
                 cmd = get_culler_cmd(profile, env_path, culler_args=culler_args)
