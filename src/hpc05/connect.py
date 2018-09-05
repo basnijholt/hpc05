@@ -11,7 +11,7 @@ from ipyparallel.error import NoEnginesRegistered
 from .ssh_utils import setup_ssh
 
 
-def wait_for_succesful_start(stdout, decode, timeout=60):
+def wait_for_succesful_start(stdout, decode, timeout=300):
     lines = iter(stdout.readline, b'')
     t_start = time.time()
     done = False
@@ -35,7 +35,7 @@ def wait_for_succesful_start(stdout, decode, timeout=60):
         time.sleep(0.01)
 
 
-def start_ipcluster(n, profile, env_path=None, timeout=60):
+def start_ipcluster(n, profile, env_path=None, timeout=300):
     """Start an ipcluster.
 
     Parameters
@@ -92,7 +92,7 @@ def start_ipcluster(n, profile, env_path=None, timeout=60):
 
 def start_remote_ipcluster(n, profile='pbs', hostname='hpc05',
                            username=None, password=None, env_path=None, 
-                           timeout=60):
+                           timeout=300):
     if env_path is None:
         env_path = ''
 
@@ -104,7 +104,7 @@ def start_remote_ipcluster(n, profile='pbs', hostname='hpc05',
 
 
 def connect_ipcluster(n, profile='pbs', folder=None, env_path=None,
-                      timeout=60, hostname='hpc05', client_kwargs=None):
+                      timeout=300, hostname='hpc05', client_kwargs=None):
     """Connect to a local ipcluster. Run this on the PBS headnode.
 
     Parameters
@@ -170,7 +170,7 @@ def connect_ipcluster(n, profile='pbs', folder=None, env_path=None,
 
 
 def start_and_connect(n, profile='pbs', folder=None,
-                      del_old_ipcluster=True, env_path=None, timeout=60,
+                      kill_old_ipcluster=True, env_path=None, timeout=300,
                       hostname='hpc05', client_kwargs=None):
     """Start a ipcluster locally and connect to it. Run this on the PBS headnode.
 
@@ -182,7 +182,7 @@ def start_and_connect(n, profile='pbs', folder=None,
         Profile name of IPython profile.
     folder : str, optional
         Folder that is added to the path of the engines, e.g. "~/Work/my_current_project".
-    del_old_ipcluster : bool
+    kill_old_ipcluster : bool
         If True, it cleansup any old instances of `ipcluster` and kills your jobs in qstat.
     env_path : str, default None
         Path of the Python environment, '/path/to/ENV/' if Python is in /path/to/ENV/bin/python.
@@ -205,7 +205,7 @@ def start_and_connect(n, profile='pbs', folder=None,
     lview : ipyparallel.client.view.LoadBalancedView
         LoadedBalancedView, equivalent to `client.load_balanced_view()`.
     """
-    if del_old_ipcluster:
+    if kill_old_ipcluster:
         kill_ipcluster(profile)
         print('Killed old intances of ipcluster.')
 
@@ -216,7 +216,7 @@ def start_and_connect(n, profile='pbs', folder=None,
 
 def start_remote_and_connect(n, profile='pbs', folder=None, hostname='hpc05',
                              username=None, password=None,
-                             del_old_ipcluster=True, env_path=None, timeout=60,
+                             kill_old_ipcluster=True, env_path=None, timeout=300,
                              client_kwargs=None):
     """Start a remote ipcluster and connect to it.
 
@@ -235,7 +235,7 @@ def start_remote_and_connect(n, profile='pbs', folder=None, hostname='hpc05',
         your `.ssh/config`.
     password : str
         Password for `ssh username@hostname`.
-    del_old_ipcluster : bool
+    kill_old_ipcluster : bool
         If True, it cleansup any old instances of `ipcluster` and kills your jobs in qstat.
     env_path : str, default None
         Path of the Python environment, '/path/to/ENV/' if Python is in /path/to/ENV/bin/python.
@@ -255,7 +255,7 @@ def start_remote_and_connect(n, profile='pbs', folder=None, hostname='hpc05',
     lview : ipyparallel.client.view.LoadBalancedView
         LoadedBalancedView, equivalent to `client.load_balanced_view()`.
     """
-    if del_old_ipcluster:
+    if kill_old_ipcluster:
         kill_remote_ipcluster(hostname, username, password)
         print('Killed old intances of ipcluster.')
 
