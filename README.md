@@ -1,7 +1,7 @@
 # hpc05
-🖥 `ipyparallel` Client package for a PBS or SLURM cluster with a headnode.
+🖥 `ipyparallel.Client` package for a PBS or SLURM cluster with a headnode.
 
-Script that connects to PBS or SLURM cluster with headnode. Since `ipyparallel` doesn't cull enginges when inactive and people are lazy (because they forget to `qdel` their jobs), it automatically kills the `ipengines` after the set timeout (default=15 min). Note that this package doesn't only work for the `hpc05` cluster on the TU Delft but also other clusters.
+Script that connects to PBS or SLURM cluster with headnode over ssh. Since `ipyparallel` doesn't cull enginges when inactive and people are lazy (because they forget to `qdel` their jobs), it automatically kills the `ipengines` after the set timeout (default=15 min). Note that this package doesn't only work for the `hpc05` cluster on the TU Delft but also other clusters.
 
 First install this package on **both** your machine and the cluster.
 
