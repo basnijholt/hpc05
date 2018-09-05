@@ -1,17 +1,14 @@
 import logging
 logging.disable(logging.CRITICAL)
 
-# Standard library imports
 import json
 import os
 import subprocess
 import tempfile
 
-# Third party imports
 import ipyparallel
 import zmq.ssh
 
-# Local imports
 from .ssh_utils import setup_ssh
 from .utils import bash, on_hostname
 

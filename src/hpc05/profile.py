@@ -1,4 +1,3 @@
-# Standard library imports
 import contextlib
 import os
 import shutil
@@ -6,10 +5,8 @@ import subprocess
 import sys
 import textwrap
 
-# Third party imports
 from IPython.paths import locate_profile
 
-# Local imports
 from .ssh_utils import get_info_from_ssh_config, setup_ssh
 from .utils import bash
 
