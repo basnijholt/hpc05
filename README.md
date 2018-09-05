@@ -21,9 +21,15 @@ ssh-copy-id hpc05
 You need a parallel profile on your cluster, which can be created by the following command on your local machine:
 ```python
 import hpc05
-hpc05.create_remote_pbs_profile(hostname='hpc05')  # on the remote machine
+# for PBS use
+hpc05.create_remote_pbs_profile(profile='pbs')  # on the remote machine
 # or
-hpc05.create_local_pbs_profile(hostname='hpc05')  # on the cluster
+hpc05.create_local_pbs_profile(profile='pbs')  # on the cluster
+
+# for SLURM use
+hpc05.create_remote_slurm_profile(profile='slurm')  # on the remote machine
+# or
+hpc05.create_local_slurm_profile(profile='slurm')  # on the cluster
 ```
 
 # Start `ipcluster` and connect (via `ssh`)
@@ -35,16 +41,18 @@ client, dview, lview = hpc05.start_remote_and_connect(
 
 This is equivent to the following three commmands:
 ```python
-# 1. starting an `ipcluster`, similar to `ipcluster start --n=200 --profile=pbs`
+# 0. Killing and removing files of an old ipcluster (this is optional with
+#    the `start_remote_and_connect` function, use the `kill_old_ipcluster` argument)
+hpc05.kill_remote_ipcluster()
+
+# 1. starting an `ipcluster`, similar to running
+#    `ipcluster start --n=200 --profile=pbs` on the cluster headnode.
 hpc05.start_remote_ipcluster(n=200, profile='pbs')
 
 # 2. Connecting to the started ipcluster and adding a folder to the cluster's `PATH`
 client, dview, lview = hpc05.connect_ipcluster(
 	n=200, profile='pbs', folder='~/your_folder_on_the_cluster/')
 
-# 3. Killing and removing files of an old ipcluster (this is optional with
-#    the `start_remote_and_connect` function, use the `kill_old_ipcluster` argument)
-hpc05.kill_remote_ipcluster()
 ```
 
 
@@ -57,6 +65,10 @@ client, dview, lview = hpc05.start_and_connect(
 
 This is equivent to the following three commmands:
 ```python
+# 0. Killing and removing files of an old ipcluster (this is optional with
+#    the `start_remote_and_connect` function, use the `kill_old_ipcluster` argument)
+hpc05.kill_ipcluster()
+
 # 1. starting an `ipcluster`, similar to `ipcluster start --n=200 --profile=pbs`
 hpc05.start_ipcluster(n=200, profile='pbs')
 
@@ -64,7 +76,4 @@ hpc05.start_ipcluster(n=200, profile='pbs')
 client, dview, lview = hpc05.connect_ipcluster(
 	n=200, profile='pbs', folder='~/your_folder_on_the_cluster/')
 
-# 3. Killing and removing files of an old ipcluster (this is optional with
-#    the `start_remote_and_connect` function, use the `kill_old_ipcluster` argument)
-hpc05.kill_ipcluster()
 ```
