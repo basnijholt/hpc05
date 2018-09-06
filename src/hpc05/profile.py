@@ -7,7 +7,7 @@ import textwrap
 
 from IPython.paths import locate_profile
 
-from .ssh_utils import get_info_from_ssh_config, setup_ssh
+from .ssh_utils import setup_ssh
 from .utils import bash
 
 
