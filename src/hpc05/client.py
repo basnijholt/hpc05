@@ -1,6 +1,7 @@
 import logging
 logging.disable(logging.CRITICAL)
 
+from contextlib import suppress
 import json
 import os
 import subprocess
@@ -95,14 +96,19 @@ class Client(ipyparallel.Client):
             # Open SFTP connection and get the ipcontroller-client.json
             with ssh.open_sftp() as sftp:
                 remote_json = f".ipython/profile_{profile}/security/ipcontroller-client.json"
-                try:
-                    sftp.get(remote_json, self.json_filename)
-                except FileNotFoundError:
-                    raise Exception(
-                        f'Could not copy the json file: "{remote_json}"of the pbs '
-                        'cluster, the `ipcluster` probably is not running or '
-                        'you have no `profile_pbs`, create with '
-                        '`hpc05.pbs_profile.create_remote_pbs_profile()`')
+
+                # Try to get the json 10 times.
+                for i in range(10):
+                    with suppress(FileNotFoundError):
+                        sftp.get(remote_json, self.json_filename)
+                        break
+                    if i == 9:
+                        raise FileNotFoundError(
+                            f'Could not copy the json file: "{remote_json}"of the pbs '
+                            'cluster, the `ipcluster` probably is not running or '
+                            'you have no `profile_pbs`, create with '
+                            '`hpc05.pbs_profile.create_remote_pbs_profile()`')
+                    time.sleep(1)
 
             # Read the json file
             with open(self.json_filename) as json_file:
