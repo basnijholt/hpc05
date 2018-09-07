@@ -53,10 +53,8 @@ def wait_for_succesful_start(log_file, timeout=300):
         if time.time() - t_start > timeout:
             raise Exception(f'Failed to start a ipcluster in {timeout} seconds.')
         time.sleep(0.01)
-
-    print_same_line('The log-file reports "Engines appear to have started successfully".')
-    print()
-
+    msg = 'The log-file reports "Engines appear to have started successfully".'
+    print_same_line(msg, new_line_end=True)
 
 
 def start_ipcluster(n, profile, env_path=None, timeout=300):

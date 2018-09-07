@@ -29,6 +29,7 @@ def bash(cmd):
 
 
 def get_local_env(env=None):
+    # XXX: improve this function and pass all argmuments!
     if env is None:
         env = sys.exec_prefix.split('/')[-1]  # conda environment name
     cmd = f'conda list --export -n {env}'.split()
@@ -39,6 +40,7 @@ def get_local_env(env=None):
 
 
 def get_remote_env(env=None):
+    # XXX: improve this function and pass all argmuments!
     with setup_ssh() as ssh:
         cmd = 'conda list --export'
         if env:
@@ -49,6 +51,7 @@ def get_remote_env(env=None):
 
 
 def check_difference_in_envs(local_env_name=None, remote_env_name=None):
+    # XXX: improve this function and pass all argmuments!
     """Only works when setting the Python env in your .bash_rc on the
     remote machine."""
     local_env = get_local_env(local_env_name)

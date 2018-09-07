@@ -27,7 +27,8 @@ def get_culler_cmd(profile='pbs', env_path=None, culler_args=None):
 
 
 class Client(ipyparallel.Client):
-    """ipyparallel Client to connect to an ipcluster.
+    """Return an `ipyparallel.Client` and connect to a remote `ipcluster`
+    over ssh if `local=False` and start the engine culler.
 
     Parameters
     ----------
@@ -64,7 +65,7 @@ class Client(ipyparallel.Client):
     Notes
     -----
     You need a profile with PBS (or SLURM) settings in your `.ipython`
-    folder on the hpc05. You can generate this by running:
+    folder on the cluster. You can generate this by running:
         hpc05.create_remote_pbs_profile(username, hostname)
     Then setup a ipcluster on the hpc05 by starting a `screen` and running
         `ipcluster start --n=10 --profile=pbs`.
