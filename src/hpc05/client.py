@@ -105,7 +105,7 @@ class Client(ipyparallel.Client):
                         'you have no `profile_pbs`, create with '
                         '`hpc05.pbs_profile.create_remote_pbs_profile()`.')
                 time.sleep(1)
-            print_same_line(f'Copied over {remote_json} in {i} seconds.', new_line_end=True)
+            print_same_line(f'Copied over {remote_json} in {i+1} attempt.', new_line_end=True)
 
             # Read the json file
             with open(self.json_filename) as json_file:

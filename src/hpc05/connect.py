@@ -206,25 +206,19 @@ def connect_ipcluster(n, profile='pbs', hostname='hpc05', username=None,
                     culler_args=culler_args, env_path=env_path, local=local,
                     timeout=timeout, **(client_kwargs or {}))
     print("Connected to the `ipcluster` using an `ipyparallel.Client`.")
-    time.sleep(2)
-
-    with suppress(NoEnginesRegistered):
-        # This can happen, we just need to wait a little longer.
-        dview = client[:]
 
     t_start = time.time()
-    n_engines_old = len(client)
-    done = (n_engines_old == n)
+    done = False
     while not done:
         n_engines = len(client)
         done = (n_engines == n)
         with suppress(NoEnginesRegistered):
             # This can happen, we just need to wait a little longer.
             dview = client[:]
-        t_diff = time.time() - t_start
-        msg = f'Connected to {n_engines} out of {n} engines after {int(t_diff)} seconds.'
-        print_same_line(msg) if n_engines_old == n_engines else print(msg)
-        if t_diff > timeout:
+        t = int(time.time() - t_start)
+        msg = f'Connected to {n_engines} out of {n} engines after {t} seconds.'
+        print_same_line(msg, new_line_end=(n_engines_old == n_engines))
+        if t > timeout:
             raise Exception(f'Not all ({n_engines}/{n}) connected after {timeout} seconds.')
         n_engines_old = n_engines
         time.sleep(1)
