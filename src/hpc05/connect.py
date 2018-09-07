@@ -10,18 +10,10 @@ from .client import Client
 from ipyparallel.error import NoEnginesRegistered
 
 from .ssh_utils import setup_ssh
+from .utils import print_same_line
 
 
 VERBOSE = True
-MAX_LINE_LENGTH = 100
-
-
-def print_same_line(msg):
-    msg = msg.strip()
-    global MAX_LINE_LENGTH
-    MAX_LINE_LENGTH = max(len(msg), MAX_LINE_LENGTH)
-    empty_space = max(MAX_LINE_LENGTH - len(msg), 0) * ' '
-    print(msg + empty_space, end='\r')
 
 
 def watch_file(fname):
@@ -69,7 +61,7 @@ def wait_for_succesful_start(log_file, timeout=300):
 
 
 def start_ipcluster(n, profile, env_path=None, timeout=300):
-    """Start an ipcluster.
+    """Start an `ipcluster` locally.
 
     Parameters
     ----------
@@ -83,6 +75,10 @@ def start_ipcluster(n, profile, env_path=None, timeout=300):
         Defaults to the environment that is sourced in `.bashrc` or `.bash_profile`.
     timeout : int
         Time limit after which the connection attempt is cancelled.
+
+    Returns
+    -------
+    None
     """
     log_file_pattern = os.path.expanduser(f'~/.ipython/profile_{profile}/log/ipcluster-*.log')
     for f in glob.glob(log_file_pattern):
@@ -121,6 +117,33 @@ def start_ipcluster(n, profile, env_path=None, timeout=300):
 def start_remote_ipcluster(n, profile='pbs', hostname='hpc05',
                            username=None, password=None, env_path=None, 
                            timeout=300):
+    """Starts an `ipcluster` over ssh on `hostname` and wait untill it's
+    successfully started.
+
+    Parameters
+    ----------
+    n : int
+        Number of engines to be started.
+    profile : str, default 'pbs'
+        Profile name of IPython profile.
+    hostname : str
+        Hostname of machine where the ipcluster runs.
+    username : str
+        Username to log into `hostname`. If not provided, it tries to look it up in
+        your `.ssh/config`.
+    password : str
+        Password for `ssh username@hostname`.
+    env_path : str, default=None
+        Path of the Python environment, '/path/to/ENV/' if Python is in `/path/to/ENV/bin/python`.
+        Examples '~/miniconda3/envs/dev/', 'miniconda3/envs/dev', '~/miniconda3'.
+        Defaults to the environment that is sourced in `.bashrc` or `.bash_profile`.
+    timeout : int
+        Time for which we try to connect to get all the engines.
+
+    Returns
+    -------
+    None
+    """
     if env_path is None:
         env_path = ''
 
@@ -131,10 +154,11 @@ def start_remote_ipcluster(n, profile='pbs', hostname='hpc05',
         wait_for_succesful_start(stdout, timeout=timeout)
 
 
-def connect_ipcluster(n, profile='pbs', folder=None, env_path=None,
-                      timeout=300, hostname='hpc05', client_kwargs=None,
-                      local=True):
-    """Connect to a local ipcluster on the cluster headnode.
+def connect_ipcluster(n, profile='pbs', hostname='hpc05', username=None,
+                      password=None, culler=True, culler_args=None,
+                      env_path=None, local=True, timeout=300,
+                      folder=None, client_kwargs=None):
+    """Connect to an `ipcluster` on the cluster headnode.
 
     Parameters
     ----------
@@ -142,18 +166,31 @@ def connect_ipcluster(n, profile='pbs', folder=None, env_path=None,
         Number of engines to be started.
     profile : str, default 'pbs'
         Profile name of IPython profile.
-    folder : str, optional
-        Folder that is added to the path of the engines, e.g. "~/Work/my_current_project".
-    timeout : int
-        Time for which we try to connect to get all the engines.
     hostname : str
         Hostname of machine where the ipcluster runs. If connecting
         via the headnode use: `socket.gethostname()` or set `local=True`.
-    client_kwargs : dict
-        Keyword arguments that are passed to `ipyparallel.Client()`.
+    username : str
+        Username to log into `hostname`. If not provided, it tries to look it up in
+        your `.ssh/config`.
+    password : str
+        Password for `ssh username@hostname`.
+    culler : bool
+        Controls starting of the culler. Default: True.
+    culler_args : str
+        Add arguments to the culler. e.g. '--timeout=200'
+    env_path : str, default: None
+        Path of the Python environment, '/path/to/ENV/' if Python is in /path/to/ENV/bin/python.
+        Examples '~/miniconda3/envs/dev/', 'miniconda3/envs/dev', '~/miniconda3'.
+        Defaults to the environment that is sourced in `.bashrc` or `.bash_profile`.
     local : bool, default: True
         Connect to the client locally or over ssh. Set it False if
         a connection over ssh is needed.
+    timeout : int
+        Time for which we try to connect to get all the engines.
+    folder : str, optional
+        Folder that is added to the path of the engines, e.g. "~/Work/my_current_project".
+    client_kwargs : dict
+        Keyword arguments that are passed to `hpc05.Client()`.
 
     Returns
     -------
@@ -164,12 +201,13 @@ def connect_ipcluster(n, profile='pbs', folder=None, env_path=None,
     lview : ipyparallel.client.view.LoadBalancedView
         LoadedBalancedView, equivalent to `client.load_balanced_view()`.
     """
-    if client_kwargs is None:
-        client_kwargs = {}
-    client = Client(profile=profile, env_path=env_path,
-                    timeout=timeout, hostname=hostname, **client_kwargs)
-    print("Connected to the `ipcluster` using a `ipyparallel.Client`.")
+    client = Client(profile=profile, hostname=hostname, username=username,
+                    password=password, culler=culler,
+                    culler_args=culler_args, env_path=env_path, local=local,
+                    timeout=timeout, **(client_kwargs or {}))
+    print("Connected to the `ipcluster` using an `ipyparallel.Client`.")
     time.sleep(2)
+
     with suppress(NoEnginesRegistered):
         # This can happen, we just need to wait a little longer.
         dview = client[:]
@@ -202,10 +240,11 @@ def connect_ipcluster(n, profile='pbs', folder=None, env_path=None,
     return client, dview, lview
 
 
-def start_and_connect(n, profile='pbs', folder=None,
-                      kill_old_ipcluster=True, env_path=None, timeout=300,
-                      hostname='hpc05', client_kwargs=None, local=True):
-    """Start a ipcluster locally and connect to it. Run this on the cluster headnode.
+def start_and_connect(n, profile='pbs', hostname='hpc05',
+                      culler=True, culler_args=None,
+                      env_path=None, local=True, timeout=300,
+                      folder=None, client_kwargs=None, kill_old_ipcluster=True):
+    """Start an `ipcluster` locally and connect to it.
 
     Parameters
     ----------
@@ -213,24 +252,29 @@ def start_and_connect(n, profile='pbs', folder=None,
         Number of engines to be started.
     profile : str, default 'pbs'
         Profile name of IPython profile.
-    folder : str, optional
-        Folder that is added to the path of the engines, e.g. "~/Work/my_current_project".
-    kill_old_ipcluster : bool
-        If True, it cleansup any old instances of `ipcluster` and kills your jobs in qstat.
-    env_path : str, default None
+    hostname : str
+        Hostname of machine where the ipcluster runs. If connecting
+        via the headnode use: `socket.gethostname()` or set `local=True`.
+    culler : bool
+        Controls starting of the culler. Default: True.
+    culler_args : str
+        Add arguments to the culler. e.g. '--timeout=200'
+    env_path : str, default: None
         Path of the Python environment, '/path/to/ENV/' if Python is in /path/to/ENV/bin/python.
         Examples '~/miniconda3/envs/dev/', 'miniconda3/envs/dev', '~/miniconda3'.
         Defaults to the environment that is sourced in `.bashrc` or `.bash_profile`.
-    timeout : int
-        Time for which we try to connect to get all the engines.
-    hostname : str
-        Hostname of machine where the ipcluster runs. If connecting
-        via the headnode use: `socket.gethostname()`.
-    client_kwargs : dict
-        Keyword arguments that are passed to `ipyparallel.Client()`.
     local : bool, default: True
         Connect to the client locally or over ssh. Set it False if
         a connection over ssh is needed.
+    timeout : int
+        Time for which we try to connect to get all the engines.
+    folder : str, optional
+        Folder that is added to the path of the engines, e.g. "~/Work/my_current_project".
+    client_kwargs : dict
+        Keyword arguments that are passed to `hpc05.Client()`.
+    kill_old_ipcluster : bool
+        If True, it cleansup any old instances of `ipcluster` and kills
+        your jobs in qstat or squeue.
 
     Returns
     -------
@@ -246,15 +290,19 @@ def start_and_connect(n, profile='pbs', folder=None,
         print('Killed old intances of ipcluster.')
 
     start_ipcluster(n, profile, env_path, timeout)
-    return connect_ipcluster(n, profile, folder, env_path, timeout,
-                             hostname, client_kwargs, local)
+
+    # all arguments for `connect_ipcluster` except `username` and `password`.
+    return connect_ipcluster(n, profile=profile, hostname=hostname,
+                             culler=culler, culler_args=culler_args,
+                             env_path=env_path, local=local, timeout=timeout,
+                             folder=folder, client_kwargs=client_kwargs)
 
 
-def start_remote_and_connect(n, profile='pbs', folder=None, hostname='hpc05',
-                             username=None, password=None,
-                             kill_old_ipcluster=True, env_path=None, timeout=300,
-                             client_kwargs=None):
-    """Start a remote ipcluster and connect to it.
+def start_remote_and_connect(n, profile='pbs', hostname='hpc05', username=None,
+                             password=None, culler=True, culler_args=None,
+                             env_path=None, timeout=300,
+                             folder=None, client_kwargs=None, kill_old_ipcluster=True):
+    """Start a remote `ipcluster` on `hostname` and connect to it.
 
     Parameters
     ----------
@@ -262,25 +310,31 @@ def start_remote_and_connect(n, profile='pbs', folder=None, hostname='hpc05',
         Number of engines to be started.
     profile : str, default 'pbs'
         Profile name of IPython profile.
-    folder : str, optional
-        Folder that is added to the path of the engines, e.g. "~/Work/my_current_project".
-    hostname : str, optional, default 'hpc05'
-        Hostname of cluster headnode.
+    hostname : str
+        Hostname of machine where the ipcluster runs. If connecting
+        via the headnode use: `socket.gethostname()` or set `local=True`.
     username : str
         Username to log into `hostname`. If not provided, it tries to look it up in
         your `.ssh/config`.
     password : str
         Password for `ssh username@hostname`.
-    kill_old_ipcluster : bool
-        If True, it cleansup any old instances of `ipcluster` and kills your jobs in qstat.
-    env_path : str, default None
+    culler : bool
+        Controls starting of the culler. Default: True.
+    culler_args : str
+        Add arguments to the culler. e.g. '--timeout=200'
+    env_path : str, default: None
         Path of the Python environment, '/path/to/ENV/' if Python is in /path/to/ENV/bin/python.
         Examples '~/miniconda3/envs/dev/', 'miniconda3/envs/dev', '~/miniconda3'.
         Defaults to the environment that is sourced in `.bashrc` or `.bash_profile`.
     timeout : int
         Time for which we try to connect to get all the engines.
+    folder : str, optional
+        Folder that is added to the path of the engines, e.g. "~/Work/my_current_project".
     client_kwargs : dict
-        Keyword arguments that are passed to `ipyparallel.Client()`.
+        Keyword arguments that are passed to `hpc05.Client()`.
+    kill_old_ipcluster : bool
+        If True, it cleansup any old instances of `ipcluster` and kills
+        your jobs in qstat or squeue.
 
     Returns
     -------
@@ -298,8 +352,13 @@ def start_remote_and_connect(n, profile='pbs', folder=None, hostname='hpc05',
     start_remote_ipcluster(n, profile, hostname, username,
                            password, env_path, timeout)
     time.sleep(2)
-    return connect_ipcluster(n, profile, folder, env_path, timeout,
-                             client_kwargs=client_kwargs, local=False)
+
+    # all arguments for `connect_ipcluster` except `local`.
+    return connect_ipcluster(n, profile=profile, hostname=hostname,
+                             username=username, password=password,
+                             culler=culler, culler_args=culler_args,
+                             env_path=env_path, local=False, timeout=timeout,
+                             folder=folder, client_kwargs=client_kwargs)
 
 
 def kill_ipcluster(name=None):
@@ -327,8 +386,8 @@ def kill_ipcluster(name=None):
          "pkill -f ipengine",
          "pkill -f ipyparallel.controller",
          "pkill -f ipyparallel.engines",
-         "scancel --name='ipy-engine-' --user=$USER",
-         "scancel --name='ipy-controller-' --user=$USER",
+         "scancel --name='ipy-engine-' --user=$USER",  # SLURM
+         "scancel --name='ipy-controller-' --user=$USER",  # SLURM
     ]
 
     if name is not None:

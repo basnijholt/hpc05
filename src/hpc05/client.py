@@ -12,7 +12,7 @@ import ipyparallel
 import zmq.ssh
 
 from .ssh_utils import setup_ssh
-from .utils import bash, on_hostname
+from .utils import bash, on_hostname, print_same_line
 
 
 def get_culler_cmd(profile='pbs', env_path=None, culler_args=None):
@@ -35,12 +35,13 @@ class Client(ipyparallel.Client):
         profile name, default is 'pbs' which results in
         the folder `~/.ipython/profile_pbs`.
     hostname : str
-        hostname, e.g. `hpc05.tudelft.net` or as in
-        your `.ssh/config`.
+        Hostname of machine where the ipcluster runs. If connecting
+        via the headnode use: `socket.gethostname()` or set `local=True`.
     username : str
-        user name at hostname
+        Username to log into `hostname`. If not provided, it tries to look it up in
+        your `.ssh/config`.
     password : str
-        password for hpc05. NOT RECOMMENDED, use ssh-agent.
+        password for `ssh username@hostname`.
     culler : bool
         Controls starting of the culler. Default: True.
     culler_args : str
@@ -72,44 +73,39 @@ class Client(ipyparallel.Client):
     def __init__(self, profile='pbs', hostname='hpc05', username=None,
                  password=None, culler=True, culler_args=None, env_path=None,
                  local=False, *args, **kwargs):
-
-        if culler_args is None:
-            culler_args = ''
+        culler_cmd = get_culler_cmd(profile, env_path, culler_args=culler_args)
 
         if local or on_hostname(hostname):
             # Don't connect over ssh if this is run on hostname.
             if culler:
-                cmd = get_culler_cmd(profile, env_path, culler_args=culler_args)
-                subprocess.Popen(cmd, shell=True,
+                subprocess.Popen(culler_cmd, shell=True,
                                  stdout=open('/dev/null', 'w'),
                                  stderr=open('logfile.log', 'a'))
             super(Client, self).__init__(profile=profile, *args, **kwargs)
-
         else:
             import pexpect
-            # Create temporary file
-            json_file, self.json_filename = tempfile.mkstemp()
+            json_file, self.json_filename = tempfile.mkstemp()  # Create temporary file
             os.close(json_file)
 
-            # Make ssh connection
-            ssh = setup_ssh(hostname, username, password)
-
-            # Open SFTP connection and get the ipcontroller-client.json
-            with ssh.open_sftp() as sftp:
-                remote_json = f".ipython/profile_{profile}/security/ipcontroller-client.json"
-
-                # Try to get the json 10 times.
-                for i in range(10):
-                    with suppress(FileNotFoundError):
-                        sftp.get(remote_json, self.json_filename)
+            # Try to get the json 10 times.
+            remote_json = fr".ipython/profile_{profile}/security/ipcontroller-client.json"
+            print_same_line(f'Trying to copy over {remote_json}.')
+            for i in range(10):
+                print_same_line(f'Trying to copy over {remote_json}. Attempt: {i}/10.')
+                with setup_ssh(hostname, username, password) as ssh:
+                    with suppress(FileNotFoundError), ssh.open_sftp() as sftp:
+                        sftp.chdir(os.path.dirname(remote_json))
+                        sftp.get(os.path.basename(remote_json), self.json_filename)
                         break
-                    if i == 9:
-                        raise FileNotFoundError(
-                            f'Could not copy the json file: "{remote_json}"of the pbs '
-                            'cluster, the `ipcluster` probably is not running or '
-                            'you have no `profile_pbs`, create with '
-                            '`hpc05.pbs_profile.create_remote_pbs_profile()`')
-                    time.sleep(1)
+                if i == 9:
+                    raise FileNotFoundError(
+                        f'Could not copy the json file: "{remote_json}" of the pbs '
+                        'cluster. This could have several reasons, most likely it is '
+                        'because the `ipcluster` probably is not running or '
+                        'you have no `profile_pbs`, create with '
+                        '`hpc05.pbs_profile.create_remote_pbs_profile()`.')
+                time.sleep(1)
+            print_same_line(f'Copied over {remote_json} in {i} seconds.', new_line_end=True)
 
             # Read the json file
             with open(self.json_filename) as json_file:
@@ -142,9 +138,8 @@ class Client(ipyparallel.Client):
                                         timeout=6)
 
             if culler:
-                cmd = get_culler_cmd(profile, env_path, culler_args=culler_args)
-                ssh.exec_command(cmd, get_pty=True)
-
+                with setup_ssh(hostname, username, password) as ssh:
+                    ssh.exec_command(culler_cmd, get_pty=True)
             super(Client, self).__init__(self.json_filename, *args, **kwargs)
 
         if not on_hostname(hostname):

@@ -8,6 +8,17 @@ import time
 from .ssh_utils import setup_ssh
 
 
+MAX_LINE_LENGTH = 100
+
+
+def print_same_line(msg, new_line_end=False):
+    msg = msg.strip()
+    global MAX_LINE_LENGTH
+    MAX_LINE_LENGTH = max(len(msg), MAX_LINE_LENGTH)
+    empty_space = max(MAX_LINE_LENGTH - len(msg), 0) * ' '
+    print(msg + empty_space, end='\r' if not new_line_end else '\n')
+
+
 def on_hostname(hostname='hpc05'):
     return socket.gethostname() == hostname
 
