@@ -66,8 +66,8 @@ class Client(ipyparallel.Client):
     You need a profile with PBS (or SLURM) settings in your `.ipython`
     folder on the hpc05. You can generate this by running:
         hpc05.create_remote_pbs_profile(username, hostname)
-    Then setup a ipcluster on the hpc05 by starting a screen and running
-        ipcluster start --n=10 --profile=pbs
+    Then setup a ipcluster on the hpc05 by starting a `screen` and running
+        `ipcluster start --n=10 --profile=pbs`.
     """
 
     def __init__(self, profile='pbs', hostname='hpc05', username=None,

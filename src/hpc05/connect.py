@@ -5,10 +5,9 @@ import subprocess
 import sys
 import time
 
-from .client import Client
-
 from ipyparallel.error import NoEnginesRegistered
 
+from .client import Client
 from .ssh_utils import setup_ssh
 from .utils import print_same_line
 
@@ -67,7 +66,7 @@ def start_ipcluster(n, profile, env_path=None, timeout=300):
     ----------
     n : int
         Number of engines to be started.
-    profile : str
+    profile : str, default 'pbs'
         Profile name of IPython profile.
     env_path : str, default=None
         Path of the Python environment, '/path/to/ENV/' if Python is in /path/to/ENV/bin/python.
@@ -209,6 +208,7 @@ def connect_ipcluster(n, profile='pbs', hostname='hpc05', username=None,
 
     t_start = time.time()
     done = False
+    n_engines_old = 0
     while not done:
         n_engines = len(client)
         done = (n_engines == n)
@@ -217,7 +217,7 @@ def connect_ipcluster(n, profile='pbs', hostname='hpc05', username=None,
             dview = client[:]
         t = int(time.time() - t_start)
         msg = f'Connected to {n_engines} out of {n} engines after {t} seconds.'
-        print_same_line(msg, new_line_end=(n_engines_old == n_engines))
+        print_same_line(msg, new_line_end=(n_engines_old != n_engines))
         if t > timeout:
             raise Exception(f'Not all ({n_engines}/{n}) connected after {timeout} seconds.')
         n_engines_old = n_engines
