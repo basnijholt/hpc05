@@ -12,7 +12,7 @@ setup(name='hpc05',
       license='BSD 2-clause',
       package_dir={'': 'src'},
       packages=['hpc05'],
-      py_modules=["hpc05_culler"],
+      py_modules=['hpc05_culler', 'hpc05_monitor'],
       install_requires=['ipyparallel', 'pexpect', 'pyzmq', 'paramiko',
                         'tornado', 'psutil'],
       zip_safe=False)

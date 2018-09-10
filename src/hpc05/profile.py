@@ -7,6 +7,7 @@ import textwrap
 
 from IPython.paths import locate_profile
 
+import hpc05_monitor
 from .ssh_utils import setup_ssh
 from .utils import bash
 
@@ -18,7 +19,8 @@ DEFAULTS = {
     'ipengine_config.py': ["c.IPEngineApp.wait_for_url_file = 300",
                            "c.EngineFactory.timeout = 300",
                            "c.IPEngineApp.startup_command = 'import os, sys'",
-                           "c.IPClusterStart.log_level = 'DEBUG'"]
+                           "c.IPClusterStart.log_level = 'DEBUG'",
+                           f"c.IPEngineApp.startup_script = '{hpc05_monitor.__file__}'"]
 }
 
 
@@ -75,10 +77,12 @@ def create_local_pbs_profile(profile='pbs', local_controller=False, custom_templ
         #PBS -t 1-{{n}}
         #PBS -V
         #PBS -N ipengine
-        #PBS -l mem=4GB
+        #PBS -l mem=15GB
         {sys.executable} -m ipyparallel.engine --profile-dir="{{profile_dir}}" --cluster-id=""
     '''
-    hpc05.create_local_pbs_profile('pbs', False, custom_template)
+    hpc05.create_local_pbs_profile('pbs_15GB',
+                                   local_controller=False,
+                                   custom_template=custom_template)
     ```
     """
     _create_parallel_profile(profile)

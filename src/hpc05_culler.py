@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """
 Script to cull idle IPython parallel engines.
 
