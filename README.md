@@ -91,4 +91,13 @@ while not hpc05_monitor.latest_data:
 hpc05_monitor.print_usage()  # uses hpc05_monitor.latest_data by default
 ```
 
-
+With output:
+```
+ id hostname             date                             CPU% MEM%
+ 15 node29.q1cluster     2018-09-10T14:25:05.350499       190%   3%
+ 19 node29.q1cluster     2018-09-10T14:25:04.860693       200%   3%
+ 26 node29.q1cluster     2018-09-10T14:25:05.324466       200%   3%
+ 28 node29.q1cluster     2018-09-10T14:25:05.148623       190%   2%
+ 29 node29.q1cluster     2018-09-10T14:25:04.737664       190%   3%
+ ...
+```
