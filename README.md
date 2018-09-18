@@ -77,3 +77,18 @@ client, dview, lview = hpc05.connect_ipcluster(
 	n=200, profile='pbs', folder='~/your_folder_on_the_cluster/')
 
 ```
+
+# Monitor resources
+This package will monitor your resources if you start it with `hpc05_monitor.start(client)`, see the following example use:
+```python
+import time
+import hpc05_monitor
+hpc05_monitor.start(client)
+
+while not hpc05_monitor.latest_data:
+    time.sleep(1)
+
+hpc05_monitor.print_usage()  # uses hpc05_monitor.latest_data by default
+```
+
+
