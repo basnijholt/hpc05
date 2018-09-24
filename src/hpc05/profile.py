@@ -12,10 +12,14 @@ from .ssh_utils import setup_ssh
 from .utils import bash
 
 
+# XXX: 2018-09-24: I used to add
+# 'ipcontroller_config.py': "c.HeartMonitor.period = 90000"
+# but for some unknown reason the connection time went from
+# ~10 s to 180 s.
+
 DEFAULTS = {
     'ipcontroller_config.py': ["c.HubFactory.ip = u'*'",
-                               "c.HubFactory.registration_timeout = 600",
-                               "c.HeartMonitor.period = 90000"],
+                               "c.HubFactory.registration_timeout = 600"],
     'ipengine_config.py': ["c.IPEngineApp.wait_for_url_file = 300",
                            "c.EngineFactory.timeout = 300",
                            "c.IPEngineApp.startup_command = 'import os, sys'",
