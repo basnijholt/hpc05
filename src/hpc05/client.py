@@ -139,8 +139,9 @@ class Client(ipyparallel.Client):
                                         timeout=6)
 
             if culler:
-                with setup_ssh(hostname, username, password) as ssh:
-                    ssh.exec_command(culler_cmd, get_pty=True)
+                # Using `with setup_ssh` here results in the culler not being started.
+                ssh = setup_ssh(hostname, username, password)
+                ssh.exec_command(culler_cmd, get_pty=True)
             super(Client, self).__init__(self.json_filename, *args, **kwargs)
 
         if not on_hostname(hostname):
