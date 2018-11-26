@@ -83,12 +83,14 @@ This package will monitor your resources if you start it with `hpc05_monitor.sta
 ```python
 import time
 import hpc05_monitor
-hpc05_monitor.start(client)
+hpc05_monitor.start(client, interval=5)  # update hpc05_monitor.MAX_USAGE every 'interval' seconds.
 
-while not hpc05_monitor.latest_data:
+while not hpc05_monitor.LATEST_DATA:
     time.sleep(1)
 
-hpc05_monitor.print_usage()  # uses hpc05_monitor.latest_data by default
+hpc05_monitor.print_usage()  # uses hpc05_monitor.LATEST_DATA by default
+
+hpc05_monitor.print_max_usage()  # uses hpc05_monitor.MAX_USAGE
 ```
 
 With output:
