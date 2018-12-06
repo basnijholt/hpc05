@@ -168,6 +168,7 @@ def create_local_slurm_profile(profile='slurm', local_controller=False, custom_t
 def _create_remote_profile(hostname='hpc05', username=None,
                            password=None, profile="pbs", local_controller=False,
                            custom_template=None, batch_type='pbs'):
+    assert batch_type in ('pbs', 'slurm')
     if custom_template is not None:
         raise NotImplementedError(f'Use `create_local_{batch_type}_profile` on the'
                                    ' cluster locally or implement this function.')

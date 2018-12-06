@@ -104,7 +104,7 @@ class Client(ipyparallel.Client):
                         'cluster. This could have several reasons, most likely it is '
                         'because the `ipcluster` probably is not running or '
                         'you have no `profile_pbs`, create with '
-                        '`hpc05.pbs_profile.create_remote_pbs_profile()`.')
+                        '`hpc05.profile.create_remote_pbs_profile()`.')
                 time.sleep(1)
             print_same_line(f'Copied over {remote_json} in {i+1} attempt.', new_line_end=True)
 
