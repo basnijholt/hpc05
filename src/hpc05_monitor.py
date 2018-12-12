@@ -22,8 +22,7 @@ def get_usage():
     import psutil
 
     hn = socket.gethostname()
-    p = psutil.Process()
-    mem = p.memory_percent()
+    mem = psutil.virtual_memory().percent
     cpu = psutil.cpu_percent()
     return {
         'engine_id': getattr(get_ipython().kernel, 'engine_id', None),
