@@ -111,6 +111,8 @@ def create_local_pbs_profile(profile='pbs', local_controller=False, custom_templ
     add_lines_in_profile(profile, files_lines_dict)
 
     print(f'Succesfully created a new {profile} profile.')
+    print('WARNING: the ipengines of this profile will ALWAYS use this'
+          f' environment! ({sys.executable})')
 
 
 def create_local_slurm_profile(profile='slurm', local_controller=False, custom_template=None):
@@ -163,7 +165,8 @@ def create_local_slurm_profile(profile='slurm', local_controller=False, custom_t
     add_lines_in_profile(profile, files_lines_dict)
 
     print(f'Succesfully created a new {profile} profile.')
-
+    print('WARNING: the ipengines of this profile will ALWAYS use this'
+          f' environment! ({sys.executable})')
 
 def _create_remote_profile(hostname='hpc05', username=None,
                            password=None, profile="pbs", local_controller=False,
