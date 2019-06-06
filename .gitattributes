@@ -1,1 +1,1 @@
-_version.py export-subst
+src/hpc05/_static_version.py export-subst

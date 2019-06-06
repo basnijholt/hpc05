@@ -1,5 +1,5 @@
 import os
-from hpc05._version import get_versions
+from hpc05._version import __version__  # noqa: F401
 
 __all__ = []
 
@@ -32,6 +32,6 @@ for module, names in available:
     exec("from hpc05.{} import {}".format(module, ", ".join(names)))
     __all__.extend(names)
 
-__version__ = get_versions()["version"]
+__all__.append("__version__")
 
 os.environ["SSH_AUTH_SOCK"] = os.path.expanduser("~/ssh-agent.socket")
