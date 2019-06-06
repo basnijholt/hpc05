@@ -26,6 +26,7 @@ setup(
     description="Client package for PBS and SLURM clusters with a headnode.",
     url="https://github.com/basnijholt/hpc05",
     author="Bas Nijholt",
+    author_email="basnijholt@gmail.com",
     license="MIT",
     package_dir={"": "src"},
     packages=["hpc05"],
