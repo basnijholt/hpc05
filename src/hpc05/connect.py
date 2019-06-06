@@ -2,21 +2,20 @@ from contextlib import suppress
 import glob
 import os.path
 import subprocess
-import sys
 import time
 
 from ipyparallel.error import NoEnginesRegistered
 
-from .client import Client
-from .ssh_utils import setup_ssh
-from .utils import print_same_line
+from hpc05.client import Client
+from hpc05.ssh_utils import setup_ssh
+from hpc05.utils import print_same_line
 
 
 VERBOSE = True
 
 
 def watch_file(fname):
-    fp = open(fname, 'r')
+    fp = open(fname, "r")
     while True:
         new = fp.readline()
         # Once all lines are read this just returns ''
@@ -28,9 +27,11 @@ def watch_file(fname):
 
 
 def watch_stdout(stdout):
-    text_iter = iter(stdout.readline, b'')
+    text_iter = iter(stdout.readline, b"")
     while True:
-        lines = [l.strip() for l in next(text_iter).replace('\r', '\n').strip().split('\n')]
+        lines = [
+            l.strip() for l in next(text_iter).replace("\r", "\n").strip().split("\n")
+        ]
         for line in lines:
             if line:
                 yield line
@@ -41,17 +42,19 @@ def wait_for_succesful_start(log_file, timeout=300):
     watch = watch_file if isinstance(log_file, str) else watch_stdout
     for line in watch(log_file):
         print(line) if VERBOSE else print_same_line(line)
-        if 'Engines appear to have started successfully' in line:
+        if "Engines appear to have started successfully" in line:
             break
 
-        if 'Cluster is already running with' in line:
+        if "Cluster is already running with" in line:
             # Currently not working!
-            raise Exception('Failed to start a ipcluster because a cluster is '
-                            'already running, run '
-                            '`hpc05.kill_remote_ipcluster()`.')
+            raise Exception(
+                "Failed to start a ipcluster because a cluster is "
+                "already running, run "
+                "`hpc05.kill_remote_ipcluster()`."
+            )
 
         if time.time() - t_start > timeout:
-            raise Exception(f'Failed to start a ipcluster in {timeout} seconds.')
+            raise Exception(f"Failed to start a ipcluster in {timeout} seconds.")
         time.sleep(0.01)
     msg = 'The log-file reports "Engines appear to have started successfully".'
     print_same_line(msg, new_line_end=True)
@@ -77,28 +80,30 @@ def start_ipcluster(n, profile, env_path=None, timeout=300):
     -------
     None
     """
-    log_file_pattern = os.path.expanduser(f'~/.ipython/profile_{profile}/log/ipcluster-*.log')
+    log_file_pattern = os.path.expanduser(
+        f"~/.ipython/profile_{profile}/log/ipcluster-*.log"
+    )
     for f in glob.glob(log_file_pattern):
         # Remove old log files.
         os.remove(f)
 
-    pid_pattern = os.path.expanduser(f'~/.ipython/profile_{profile}/pid/*')
+    pid_pattern = os.path.expanduser(f"~/.ipython/profile_{profile}/pid/*")
     for f in glob.glob(pid_pattern):
         # Remove old pid files.
         os.remove(f)
 
-    ipcluster = 'ipcluster'
+    ipcluster = "ipcluster"
     if env_path:
-        ipcluster = os.path.join(os.path.expanduser(env_path), 'bin', ipcluster)
+        ipcluster = os.path.join(os.path.expanduser(env_path), "bin", ipcluster)
 
-    print(f'Launching {n} engines in a ipcluster.')
-    cmd = f'{ipcluster} start --profile={profile} --n={n} --log-to-file --daemon &'
+    print(f"Launching {n} engines in a ipcluster.")
+    cmd = f"{ipcluster} start --profile={profile} --n={n} --log-to-file --daemon &"
 
     # For an unknown reason `subprocess.Popen(cmd.split())` doesn't work when
     # running `start_remote_ipcluster` and connecting to it, so we use os.system.
-    os.system(cmd + ("> /dev/null 2>&1" if not VERBOSE else ''))
+    os.system(cmd + ("> /dev/null 2>&1" if not VERBOSE else ""))
     for i in range(10):
-        print_same_line(f'Waiting for {i} seconds for the log-file.')
+        print_same_line(f"Waiting for {i} seconds for the log-file.")
         time.sleep(1)  # We wait a bit since we need the log file to exist
 
         # We don't PIPE stdout of the process above because we need a detached
@@ -106,14 +111,20 @@ def start_ipcluster(n, profile, env_path=None, timeout=300):
         with suppress(IndexError):
             log_file = glob.glob(log_file_pattern)[0]
             break
-    print(f'Found the log-file ({log_file}) in {i} seconds.')
+    print(f"Found the log-file ({log_file}) in {i} seconds.")
 
     wait_for_succesful_start(log_file, timeout=timeout)
 
 
-def start_remote_ipcluster(n, profile='pbs', hostname='hpc05',
-                           username=None, password=None, env_path=None, 
-                           timeout=300):
+def start_remote_ipcluster(
+    n,
+    profile="pbs",
+    hostname="hpc05",
+    username=None,
+    password=None,
+    env_path=None,
+    timeout=300,
+):
     """Starts an `ipcluster` over ssh on `hostname` and wait untill it's
     successfully started.
 
@@ -142,7 +153,7 @@ def start_remote_ipcluster(n, profile='pbs', hostname='hpc05',
     None
     """
     if env_path is None:
-        env_path = ''
+        env_path = ""
 
     with setup_ssh(hostname, username, password) as ssh:
         cmd = f"import hpc05; hpc05.start_ipcluster({n}, '{profile}', '{env_path}', {timeout})"
@@ -151,10 +162,20 @@ def start_remote_ipcluster(n, profile='pbs', hostname='hpc05',
         wait_for_succesful_start(stdout, timeout=timeout)
 
 
-def connect_ipcluster(n, profile='pbs', hostname='hpc05', username=None,
-                      password=None, culler=True, culler_args=None,
-                      env_path=None, local=True, timeout=300,
-                      folder=None, client_kwargs=None):
+def connect_ipcluster(
+    n,
+    profile="pbs",
+    hostname="hpc05",
+    username=None,
+    password=None,
+    culler=True,
+    culler_args=None,
+    env_path=None,
+    local=True,
+    timeout=300,
+    folder=None,
+    client_kwargs=None,
+):
     """Connect to an `ipcluster` on the cluster headnode.
 
     Parameters
@@ -198,10 +219,18 @@ def connect_ipcluster(n, profile='pbs', hostname='hpc05', username=None,
     lview : ipyparallel.client.view.LoadBalancedView
         LoadedBalancedView, equivalent to `client.load_balanced_view()`.
     """
-    client = Client(profile=profile, hostname=hostname, username=username,
-                    password=password, culler=culler,
-                    culler_args=culler_args, env_path=env_path, local=local,
-                    timeout=timeout, **(client_kwargs or {}))
+    client = Client(
+        profile=profile,
+        hostname=hostname,
+        username=username,
+        password=password,
+        culler=culler,
+        culler_args=culler_args,
+        env_path=env_path,
+        local=local,
+        timeout=timeout,
+        **(client_kwargs or {}),
+    )
     print("Connected to the `ipcluster` using an `ipyparallel.Client`.")
 
     t_start = time.time()
@@ -209,15 +238,17 @@ def connect_ipcluster(n, profile='pbs', hostname='hpc05', username=None,
     n_engines_old = 0
     while not done:
         n_engines = len(client)
-        done = (n_engines == n)
+        done = n_engines == n
         with suppress(NoEnginesRegistered):
             # This can happen, we just need to wait a little longer.
             dview = client[:]
         t = int(time.time() - t_start)
-        msg = f'Connected to {n_engines} out of {n} engines after {t} seconds.'
+        msg = f"Connected to {n_engines} out of {n} engines after {t} seconds."
         print_same_line(msg, new_line_end=(n_engines_old != n_engines))
         if t > timeout:
-            raise Exception(f'Not all ({n_engines}/{n}) connected after {timeout} seconds.')
+            raise Exception(
+                f"Not all ({n_engines}/{n}) connected after {timeout} seconds."
+            )
         n_engines_old = n_engines
         time.sleep(1)
 
@@ -225,17 +256,26 @@ def connect_ipcluster(n, profile='pbs', hostname='hpc05', username=None,
     lview = client.load_balanced_view()
 
     if folder is not None:
-        print(f'Adding {folder} to path.')
+        print(f"Adding {folder} to path.")
         cmd = f"import sys, os; sys.path.append(os.path.expanduser('{folder}'))"
         dview.execute(cmd).result()
 
     return client, dview, lview
 
 
-def start_and_connect(n, profile='pbs', hostname='hpc05',
-                      culler=True, culler_args=None,
-                      env_path=None, local=True, timeout=300,
-                      folder=None, client_kwargs=None, kill_old_ipcluster=True):
+def start_and_connect(
+    n,
+    profile="pbs",
+    hostname="hpc05",
+    culler=True,
+    culler_args=None,
+    env_path=None,
+    local=True,
+    timeout=300,
+    folder=None,
+    client_kwargs=None,
+    kill_old_ipcluster=True,
+):
     """Start an `ipcluster` locally and connect to it.
 
     Parameters
@@ -279,21 +319,39 @@ def start_and_connect(n, profile='pbs', hostname='hpc05',
     """
     if kill_old_ipcluster:
         kill_ipcluster(profile)
-        print('Killed old intances of ipcluster.')
+        print("Killed old intances of ipcluster.")
 
     start_ipcluster(n, profile, env_path, timeout)
 
     # all arguments for `connect_ipcluster` except `username` and `password`.
-    return connect_ipcluster(n, profile=profile, hostname=hostname,
-                             culler=culler, culler_args=culler_args,
-                             env_path=env_path, local=local, timeout=timeout,
-                             folder=folder, client_kwargs=client_kwargs)
+    return connect_ipcluster(
+        n,
+        profile=profile,
+        hostname=hostname,
+        culler=culler,
+        culler_args=culler_args,
+        env_path=env_path,
+        local=local,
+        timeout=timeout,
+        folder=folder,
+        client_kwargs=client_kwargs,
+    )
 
 
-def start_remote_and_connect(n, profile='pbs', hostname='hpc05', username=None,
-                             password=None, culler=True, culler_args=None,
-                             env_path=None, timeout=300,
-                             folder=None, client_kwargs=None, kill_old_ipcluster=True):
+def start_remote_and_connect(
+    n,
+    profile="pbs",
+    hostname="hpc05",
+    username=None,
+    password=None,
+    culler=True,
+    culler_args=None,
+    env_path=None,
+    timeout=300,
+    folder=None,
+    client_kwargs=None,
+    kill_old_ipcluster=True,
+):
     """Start a remote `ipcluster` on `hostname` and connect to it.
 
     Parameters
@@ -339,18 +397,26 @@ def start_remote_and_connect(n, profile='pbs', hostname='hpc05', username=None,
     """
     if kill_old_ipcluster:
         kill_remote_ipcluster(hostname, username, password)
-        print('Killed old intances of ipcluster.')
+        print("Killed old intances of ipcluster.")
 
-    start_remote_ipcluster(n, profile, hostname, username,
-                           password, env_path, timeout)
+    start_remote_ipcluster(n, profile, hostname, username, password, env_path, timeout)
     time.sleep(2)
 
     # all arguments for `connect_ipcluster` except `local`.
-    return connect_ipcluster(n, profile=profile, hostname=hostname,
-                             username=username, password=password,
-                             culler=culler, culler_args=culler_args,
-                             env_path=env_path, local=False, timeout=timeout,
-                             folder=folder, client_kwargs=client_kwargs)
+    return connect_ipcluster(
+        n,
+        profile=profile,
+        hostname=hostname,
+        username=username,
+        password=password,
+        culler=culler,
+        culler_args=culler_args,
+        env_path=env_path,
+        local=False,
+        timeout=timeout,
+        folder=folder,
+        client_kwargs=client_kwargs,
+    )
 
 
 def kill_ipcluster(name=None):
@@ -372,27 +438,27 @@ def kill_ipcluster(name=None):
     """
     clean_up_cmds = [
         "qselect -u $USER | xargs qdel",
-         "rm -f *.hpc05.hpc* ipengine* ipcontroller* pbs_*",
-         "pkill -f hpc05_culler",
-         "pkill -f ipcluster",
-         "pkill -f ipengine",
-         "pkill -f ipyparallel.controller",
-         "pkill -f ipyparallel.engines",
-         "scancel --name='ipy-engine-' --user=$USER",  # SLURM
-         "scancel --name='ipy-controller-' --user=$USER",  # SLURM
+        "rm -f *.hpc05.hpc* ipengine* ipcontroller* pbs_*",
+        "pkill -f hpc05_culler",
+        "pkill -f ipcluster",
+        "pkill -f ipengine",
+        "pkill -f ipyparallel.controller",
+        "pkill -f ipyparallel.engines",
+        "scancel --name='ipy-engine-' --user=$USER",  # SLURM
+        "scancel --name='ipy-controller-' --user=$USER",  # SLURM
     ]
 
     if name is not None:
         clean_up_cmds.append(f"scancel --name='{name}' --user=$USER")
 
-    clean_up_cmds = [cmd + ' 2> /dev/null' for cmd in clean_up_cmds]
+    clean_up_cmds = [cmd + " 2> /dev/null" for cmd in clean_up_cmds]
 
     for cmd in clean_up_cmds:
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
         process.wait()
 
 
-def kill_remote_ipcluster(hostname='hpc05', username=None, password=None):
+def kill_remote_ipcluster(hostname="hpc05", username=None, password=None):
     """Kill your remote ipcluster and cleanup the files.
 
     This should do the same as the following bash function (recommended:

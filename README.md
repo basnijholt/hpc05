@@ -103,3 +103,12 @@ With output:
  29 node29.q1cluster     2018-09-10T14:25:04.737664       190%   3%
  ...
 ```
+
+
+## Development
+
+We use [pre-commit](https://pre-commit.com) for linting of the code, so `pip install pre_commit` and run
+```
+pre-commit install
+```
+in the repository.
