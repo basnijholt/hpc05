@@ -25,7 +25,6 @@ def text_between_markers(fname, between):
     for line in lines:
         if any(marker in line for marker in between):
             do_append = not do_append
-            continue
         if do_append:
             long_description.append(line)
     return "".join(long_description).strip("\n")
