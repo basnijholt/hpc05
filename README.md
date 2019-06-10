@@ -30,12 +30,12 @@ You need a parallel profile on your cluster, which can be created by the followi
 ```python
 import hpc05
 # for PBS use
-hpc05.create_remote_pbs_profile(profile='pbs')  # on the remote machine
+hpc05.create_remote_pbs_profile(profile='pbs', hostname='hpc05')  # on the remote machine
 # or
 hpc05.create_local_pbs_profile(profile='pbs')  # on the cluster
 
 # for SLURM use
-hpc05.create_remote_slurm_profile(profile='slurm')  # on the remote machine
+hpc05.create_remote_slurm_profile(profile='slurm', hostname='hpc05')  # on the remote machine
 # or
 hpc05.create_local_slurm_profile(profile='slurm')  # on the cluster
 ```
@@ -44,22 +44,22 @@ hpc05.create_local_slurm_profile(profile='slurm')  # on the cluster
 To start **and** connect to an `ipcluster` just do (and read the error messages if any, for instructions):
 ```python
 client, dview, lview = hpc05.start_remote_and_connect(
-	n=100, profile='pbs', folder='~/your_folder_on_the_cluster/')
+	n=100, profile='pbs', hostname='hpc05', folder='~/your_folder_on_the_cluster/')
 ```
 
 This is equivent to the following three commmands:
 ```python
 # 0. Killing and removing files of an old ipcluster (this is optional with
 #    the `start_remote_and_connect` function, use the `kill_old_ipcluster` argument)
-hpc05.kill_remote_ipcluster()
+hpc05.kill_remote_ipcluster(hostname='hpc05')
 
 # 1. starting an `ipcluster`, similar to running
-#    `ipcluster start --n=200 --profile=pbs` on the cluster headnode.
-hpc05.start_remote_ipcluster(n=200, profile='pbs')
+#    `ipcluster start --n=100 --profile=pbs` on the cluster headnode.
+hpc05.start_remote_ipcluster(n=100, profile='pbs', hostname='hpc05')
 
 # 2. Connecting to the started ipcluster and adding a folder to the cluster's `PATH`
 client, dview, lview = hpc05.connect_ipcluster(
-	n=200, profile='pbs', folder='~/your_folder_on_the_cluster/')
+	n=200, profile='pbs', hostname='hpc05', folder='~/your_folder_on_the_cluster/')
 
 ```
 
