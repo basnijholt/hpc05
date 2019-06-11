@@ -22,23 +22,8 @@ def get_version_and_cmdclass(package_name):
 
 version, cmdclass = get_version_and_cmdclass("hpc05")
 
-
-def text_between_markers(fname, between):
-    with open(fname) as f:
-        lines = f.readlines()
-    do_append = False
-    long_description = []
-    for line in lines:
-        if any(marker in line for marker in between):
-            do_append = not do_append
-        if do_append:
-            long_description.append(line)
-    return "".join(long_description).strip("\n")
-
-
-long_description = text_between_markers(
-    fname="README.md", between=["# hpc05", "# Installation"]
-)
+with open("README.md") as f:
+    readme = f.read()
 
 setup(
     name="hpc05",
@@ -46,7 +31,8 @@ setup(
     cmdclass=cmdclass,
     python_requires=">=3.6",
     description="Client package for PBS and SLURM clusters with a headnode.",
-    long_description=long_description,
+    long_description=readme,
+    long_description_content_type="text/markdown",
     url="https://github.com/basnijholt/hpc05",
     author="Bas Nijholt",
     author_email="basnijholt@gmail.com",
