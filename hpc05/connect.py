@@ -238,7 +238,7 @@ def connect_ipcluster(
     n_engines_old = 0
     while not done:
         n_engines = len(client)
-        done = n_engines == n
+        done = n_engines >= n
         with suppress(NoEnginesRegistered):
             # This can happen, we just need to wait a little longer.
             dview = client[:]
