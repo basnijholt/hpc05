@@ -1,6 +1,12 @@
 #!/usr/bin/env python
 
+import sys
 from setuptools import find_packages, setup
+
+
+if sys.version_info < (3, 6):
+    print("hpc05 requires Python 3.6 or above.")
+    sys.exit(1)
 
 
 # Loads _version.py module without importing the whole package.
@@ -38,6 +44,7 @@ setup(
     name="hpc05",
     version=version,
     cmdclass=cmdclass,
+    python_requires=">=3.6",
     description="Client package for PBS and SLURM clusters with a headnode.",
     long_description=long_description,
     url="https://github.com/basnijholt/hpc05",
