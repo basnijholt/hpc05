@@ -102,7 +102,7 @@ def start_ipcluster(n, profile, env_path=None, timeout=300):
     # For an unknown reason `subprocess.Popen(cmd.split())` doesn't work when
     # running `start_remote_ipcluster` and connecting to it, so we use os.system.
     os.system(cmd + ("> /dev/null 2>&1" if not VERBOSE else ""))
-    for i in range(10):
+    for i in range(timeout):
         print_same_line(f"Waiting for {i} seconds for the log-file.")
         time.sleep(1)  # We wait a bit since we need the log file to exist
 
