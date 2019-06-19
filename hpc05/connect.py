@@ -154,10 +154,13 @@ def start_remote_ipcluster(
     """
     if env_path is None:
         env_path = ""
+        python_exec = "python"
+    else:
+        python_exec = os.path.join(env_path, "bin", "python")
 
     with setup_ssh(hostname, username, password) as ssh:
         cmd = f"import hpc05; hpc05.start_ipcluster({n}, '{profile}', '{env_path}', {timeout})"
-        cmd = f'python -c "{cmd}"'
+        cmd = f'{python_exec} -c "{cmd}"'
         stdin, stdout, stderr = ssh.exec_command(cmd, get_pty=True)
         wait_for_succesful_start(stdout, timeout=timeout)
 
