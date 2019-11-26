@@ -30,6 +30,12 @@ setup(
     version=version,
     cmdclass=cmdclass,
     python_requires=">=3.6",
+    classifiers=[
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: OS Independent",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.7",
+    ],
     description="Client package for PBS and SLURM clusters with a headnode.",
     long_description=readme,
     long_description_content_type="text/markdown",
