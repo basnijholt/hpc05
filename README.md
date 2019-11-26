@@ -1,7 +1,10 @@
 # hpc05
-[![PyPI](https://img.shields.io/pypi/v/hpc05.svg)](https://pypi.python.org/pypi/hpc05)
 [![Conda](https://anaconda.org/conda-forge/hpc05/badges/installer/conda.svg)](https://anaconda.org/conda-forge/hpc05)
 [![Downloads](https://anaconda.org/conda-forge/hpc05/badges/downloads.svg)](https://anaconda.org/conda-forge/hpc05)
+[![docs](https://img.shields.io/readthedocs/hpc05)](https://hpc05.readthedocs.io)
+[![version](https://img.shields.io/pypi/v/hpc05)](https://pypi.org/project/hpc05/)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/hpc05)](https://pypi.org/project/hpc05/)
+
 
 🖥 `ipyparallel.Client` package for a PBS or SLURM cluster with a headnode.
 
