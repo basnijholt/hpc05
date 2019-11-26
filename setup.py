@@ -25,6 +25,19 @@ version, cmdclass = get_version_and_cmdclass("hpc05")
 with open("README.md") as f:
     readme = f.read()
 
+extras_require = dict(
+    docs=[
+        "sphinx",
+        "sphinx-rtd-theme",
+        "m2r",  # markdown support
+        "sphinxcontrib.apidoc",  # run sphinx-apidoc when building docs
+    ],
+    dev=["pre-commit"],
+)
+
+install_requires = ["ipyparallel", "pexpect", "pyzmq", "paramiko", "tornado", "psutil"]
+
+
 setup(
     name="hpc05",
     version=version,
@@ -45,13 +58,7 @@ setup(
     license="MIT",
     packages=find_packages("."),
     py_modules=["hpc05_culler", "hpc05_monitor"],
-    install_requires=[
-        "ipyparallel",
-        "pexpect",
-        "pyzmq",
-        "paramiko",
-        "tornado",
-        "psutil",
-    ],
+    install_requires=install_requires,
+    extras_require=extras_require,
     zip_safe=False,
 )
