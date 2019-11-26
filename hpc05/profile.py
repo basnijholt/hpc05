@@ -158,7 +158,7 @@ def create_local_slurm_profile(
     .. code-block:: python
 
         import hpc05
-        custom_template = '''\
+        custom_template = '''\\
             #!/bin/sh
             #SBATCH --ntasks={n}
             #SBATCH --mem-per-cpu=4G
