@@ -86,21 +86,19 @@ def create_local_pbs_profile(
     By default no memory is specified, using the following `custom_template`
     allows you to request a certain amount of memory.
 
-    ```python
-    import hpc05
-    import sys
-    custom_template = f'''\\
-        #!/bin/sh
-        #PBS -t 1-{{n}}
-        #PBS -V
-        #PBS -N ipengine
-        #PBS -l mem=15GB
-        {sys.executable} -m ipyparallel.engine --profile-dir="{{profile_dir}}" --cluster-id=""
-    '''
-    hpc05.create_local_pbs_profile('pbs_15GB',
-                                   local_controller=False,
-                                   custom_template=custom_template)
-    ```
+    >>> import hpc05
+    >>> import sys
+    >>> custom_template = f'''\\
+    ...     #!/bin/sh
+    ...     #PBS -t 1-{{n}}
+    ...     #PBS -V
+    ...     #PBS -N ipengine
+    ...     #PBS -l mem=15GB
+    ...     {sys.executable} -m ipyparallel.engine --profile-dir="{{profile_dir}}" --cluster-id=""
+    ... '''
+    >>> hpc05.create_local_pbs_profile('pbs_15GB',
+    ...                                local_controller=False,
+    ...                                custom_template=custom_template)
     """
     _create_parallel_profile(profile)
 
