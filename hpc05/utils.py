@@ -54,7 +54,7 @@ def get_remote_env(env=None):
 
 def check_difference_in_envs(local_env_name=None, remote_env_name=None):
     # XXX: improve this function and pass all argmuments!
-    """Only works when setting the Python env in your .bash_rc on the
+    """Only works when setting the Python env in your ``~/.bash_rc`` on the
     remote machine."""
     local_env = get_local_env(local_env_name)
     remote_env = get_remote_env(remote_env_name)
