@@ -97,7 +97,7 @@ def start_ipcluster(n, profile, env_path=None, timeout=300):
         ipcluster = os.path.join(os.path.expanduser(env_path), "bin", ipcluster)
 
     print(f"Launching {n} engines in a ipcluster.")
-    cmd = f"{ipcluster} start --profile={profile} --n={n} --log-to-file --daemon &"
+    cmd = f"{ipcluster} start --profile={profile} --n={n} --log-to-file --daemonize &"
 
     # For an unknown reason `subprocess.Popen(cmd.split())` doesn't work when
     # running `start_remote_ipcluster` and connecting to it, so we use os.system.
